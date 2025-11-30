@@ -1,10 +1,456 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
 <head>
-    <title>我的 GitHub 網站</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>全方位房貸試算 App</title>
+  <!-- 載入 Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- 載入 Chart.js 視覺化圖表 -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.1/dist/chart.min.js"></script>
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    .modal {
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background-color: rgba(0, 0, 0, 0.7); display: none;
+      justify-content: center; align-items: center; z-index: 50;
+    }
+    /* Tab 動畫效果 */
+    .tab-btn { transition: all 0.3s ease; border-bottom: 2px solid transparent; }
+    .tab-btn.active { color: #10b981; border-bottom-color: #10b981; font-weight: bold; background-color: #ecfdf5; }
+  </style>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { 'primary': '#10b981', 'secondary': '#3b82f6' }
+        }
+      }
+    }
+  </script>
 </head>
-<body>
-    <h1>Hello World!</h1>
-    <p>這是我用 GitHub Pages 建立的第一個網站。</p>
+<body class="bg-gray-50 min-h-screen p-3 sm:p-6">
+
+  <div class="max-w-4xl mx-auto">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6 flex items-center">
+      <svg class="w-8 h-8 mr-2 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2M21 12a9 9 0 11-18 0 9 9 0 0118 0zM12 14c1.657 0 3-.895 3-2s-1.343-2-3-2m0 4h.01"></path></svg>
+      全方位房貸工具
+    </h1>
+
+    <!-- 頁籤切換區 (Tabs) -->
+    <div class="flex mb-6 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <button onclick="switchTab('comparison')" id="tab-comparison" class="tab-btn active flex-1 py-4 text-center text-gray-600 hover:bg-gray-50">
+            📊 方案比較試算
+        </button>
+        <button onclick="switchTab('affordability')" id="tab-affordability" class="tab-btn flex-1 py-4 text-center text-gray-600 hover:bg-gray-50">
+            💰 反推可貸額度
+        </button>
+    </div>
+
+    <!-- 模式 1: 貸款方案比較 (原功能) -->
+    <div id="mode-comparison">
+        <div id="loanContainer" class="space-y-4 mb-6">
+          <!-- 方案卡片由 JS 插入 -->
+        </div>
+
+        <div class="flex flex-col sm:flex-row gap-3 mb-8">
+          <button onclick="addLoanSet()" class="flex-1 px-4 py-3 bg-primary text-white font-semibold rounded-xl shadow-md hover:bg-emerald-600 transition duration-150 active:scale-95">
+            + 新增方案
+          </button>
+          <button onclick="calculate()" class="flex-1 px-4 py-3 bg-secondary text-white font-semibold rounded-xl shadow-md hover:bg-blue-600 transition duration-150 active:scale-95">
+            📊 立即試算
+          </button>
+        </div>
+
+        <div id="results" class="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+          <h2 class="text-xl font-semibold text-gray-700 mb-4">試算結果總覽</h2>
+          <p id="initialMessage" class="text-gray-500 italic">請新增方案並點擊「立即試算」按鈕。</p>
+          <div id="resultsTableContainer"></div>
+          <div id="chartContainer" class="mt-8 pt-4 border-t border-gray-200 hidden">
+              <h3 class="text-lg font-semibold text-gray-700 mb-4">總還款額視覺化比較</h3>
+              <div class="h-64"><canvas id="comparisonChart"></canvas></div>
+          </div>
+        </div>
+    </div>
+
+    <!-- 模式 2: 反推負擔能力 (新功能) -->
+    <div id="mode-affordability" class="hidden">
+        <div class="bg-white p-6 rounded-xl shadow-lg border border-gray-100 mb-6">
+            <h2 class="text-xl font-semibold text-gray-700 mb-4 border-b pb-2">輸入您的預算</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 月負擔能力 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">每月預算 (元)</label>
+                    <div class="relative">
+                        <input type="number" id="affordMonthly" placeholder="例如: 30000" class="w-full px-4 py-3 border border-gray-300 rounded-lg text-lg focus:ring-primary focus:border-primary" oninput="calculateAffordability()">
+                        <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none text-gray-500">元</div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">您每個月最多願意支付多少房貸？</p>
+                </div>
+
+                <!-- 貸款條件 -->
+                <div class="space-y-4">
+                    <div class="flex gap-4">
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">年限 (年)</label>
+                            <select id="affordYears" class="w-full px-3 py-3 border border-gray-300 rounded-lg bg-white" onchange="calculateAffordability()">
+                                <option value="20">20 年</option>
+                                <option value="30" selected>30 年</option>
+                                <option value="40">40 年</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">年利率 (%)</label>
+                            <input type="number" id="affordRate" value="2.185" step="0.01" class="w-full px-3 py-3 border border-gray-300 rounded-lg" oninput="calculateAffordability()">
+                        </div>
+                    </div>
+                    <!-- 預計貸款成數 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">預計貸款成數</label>
+                        <input type="range" id="affordLTV" min="50" max="90" value="80" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-primary" oninput="document.getElementById('ltvDisplay').innerText = this.value + '%'; calculateAffordability()">
+                        <div class="flex justify-between text-xs text-gray-500 mt-1">
+                            <span>50%</span>
+                            <span id="ltvDisplay" class="font-bold text-primary">80%</span>
+                            <span>90%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 反推結果區 -->
+        <div id="affordResult" class="hidden bg-gradient-to-br from-emerald-50 to-teal-50 p-6 rounded-xl shadow-lg border border-emerald-100">
+            <h3 class="text-lg font-bold text-emerald-800 mb-4 flex items-center">
+                📊 推算結果
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
+                <div>
+                    <p class="text-sm text-gray-600 mb-1">建議貸款總額</p>
+                    <p class="text-3xl font-bold text-gray-800" id="resLoanAmount">0 <span class="text-lg font-normal">萬元</span></p>
+                    <p class="text-xs text-gray-500 mt-1">*基於本息平均攤還計算</p>
+                </div>
+                <div class="bg-white p-4 rounded-lg border border-emerald-100 shadow-sm">
+                    <p class="text-sm text-gray-600 mb-1">🏠 建議房屋總價 (估算)</p>
+                    <p class="text-2xl font-bold text-primary" id="resHousePrice">0 <span class="text-lg font-normal text-gray-600">萬元</span></p>
+                    <p class="text-xs text-gray-400 mt-1">假設貸款成數為 <span id="resLTV">80</span>%</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+  </div>
+  
+  <!-- Modal (保留用於模式1的細節表) -->
+  <div id="detailsModal" class="modal" onclick="this.style.display='none'">
+    <div class="bg-white rounded-xl shadow-2xl max-w-4xl max-h-[90vh] overflow-y-auto p-6" onclick="event.stopPropagation()">
+      <div class="flex justify-between items-center mb-4 border-b pb-2">
+        <h3 id="modalTitle" class="text-xl font-bold text-gray-800">還款細節表</h3>
+        <button onclick="document.getElementById('detailsModal').style.display='none'" class="text-gray-400 hover:text-gray-600">✕</button>
+      </div>
+      <div id="amortizationScheduleContent" class="text-sm"></div>
+    </div>
+  </div>
+
+  <script>
+    // --- 共用與初始化 ---
+    let loanIndex = 0;
+    let myChart = null;
+
+    function formatNumber(num) {
+      if (typeof num !== 'number' || isNaN(num)) return '0';
+      return Math.round(Math.max(0, num)).toLocaleString('zh-TW');
+    }
+
+    // 頁籤切換邏輯
+    function switchTab(tabName) {
+        // 更新按鈕樣式
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active', 'text-primary', 'border-primary', 'bg-emerald-50'));
+        document.getElementById(`tab-${tabName}`).classList.add('active');
+
+        // 切換顯示內容
+        if (tabName === 'comparison') {
+            document.getElementById('mode-comparison').classList.remove('hidden');
+            document.getElementById('mode-affordability').classList.add('hidden');
+        } else {
+            document.getElementById('mode-comparison').classList.add('hidden');
+            document.getElementById('mode-affordability').classList.remove('hidden');
+        }
+    }
+
+    // --- 模式 2: 反推計算邏輯 (Affordability) ---
+    function calculateAffordability() {
+        const monthlyBudget = parseFloat(document.getElementById('affordMonthly').value);
+        const years = parseFloat(document.getElementById('affordYears').value);
+        const ratePercent = parseFloat(document.getElementById('affordRate').value);
+        const ltvPercent = parseFloat(document.getElementById('affordLTV').value);
+
+        const resultDiv = document.getElementById('affordResult');
+
+        if (!monthlyBudget || monthlyBudget <= 0 || !years || !ratePercent) {
+            resultDiv.classList.add('hidden');
+            return;
+        }
+
+        resultDiv.classList.remove('hidden');
+
+        // 公式: PV = PMT * (1 - (1+r)^-n) / r
+        // r = 月利率, n = 總月數
+        const r = ratePercent / 100 / 12;
+        const n = years * 12;
+        
+        let loanAmount = 0;
+        if (r === 0) {
+            loanAmount = monthlyBudget * n;
+        } else {
+            loanAmount = (monthlyBudget * (1 - Math.pow(1 + r, -n))) / r;
+        }
+
+        // 推算房屋總價 = 貸款金額 / 成數
+        const housePrice = loanAmount / (ltvPercent / 100);
+
+        // 顯示結果 (轉換為萬元)
+        document.getElementById('resLoanAmount').textContent = formatNumber(loanAmount / 10000);
+        document.getElementById('resHousePrice').textContent = formatNumber(housePrice / 10000);
+        document.getElementById('resLTV').textContent = ltvPercent;
+    }
+
+
+    // --- 模式 1: 比較計算邏輯 (Comparison) ---
+    // (保留原本的核心邏輯，為節省篇幅僅列出關鍵函式)
+
+    function calculatePMT(amount, monthlyRate, months) {
+      if (monthlyRate === 0) return amount / months;
+      return (amount * monthlyRate) / (1 - Math.pow(1 + monthlyRate, -months));
+    }
+    
+    function generateSchedule(amount, years, rate, graceMonths, type) {
+        const fullMonths = years * 12;
+        const monthlyRate = rate / 12;
+        const schedule = [];
+        let remainingPrincipal = amount;
+        const paymentMonths = fullMonths - graceMonths;
+
+        let amortizationPMT = 0;
+        let monthlyPrincipal = 0; 
+        
+        if (paymentMonths > 0) {
+            if (type === 'interest') {
+                amortizationPMT = calculatePMT(amount, monthlyRate, paymentMonths);
+            } else { 
+                monthlyPrincipal = amount / paymentMonths;
+            }
+        }
+        
+        for (let m = 1; m <= graceMonths; m++) {
+            const interest = remainingPrincipal * monthlyRate;
+            schedule.push({
+                period: m, monthlyPayment: interest, principal: 0,
+                interest: interest, remainingPrincipal: remainingPrincipal, isGrace: true
+            });
+        }
+
+        for (let m = graceMonths + 1; m <= fullMonths; m++) {
+            const currentInterest = remainingPrincipal * monthlyRate;
+            let currentPrincipal, currentMonthlyPayment;
+
+            if (type === 'interest') {
+                currentMonthlyPayment = amortizationPMT;
+                currentPrincipal = currentMonthlyPayment - currentInterest;
+            } else { 
+                currentPrincipal = monthlyPrincipal;
+                currentMonthlyPayment = currentPrincipal + currentInterest;
+            }
+
+            if (remainingPrincipal < currentPrincipal) {
+                currentPrincipal = remainingPrincipal;
+                currentMonthlyPayment = currentPrincipal + currentInterest;
+            }
+            remainingPrincipal = Math.max(0, remainingPrincipal - currentPrincipal);
+
+            schedule.push({
+                period: m, monthlyPayment: currentMonthlyPayment, principal: currentPrincipal,
+                interest: currentInterest, remainingPrincipal: remainingPrincipal, isGrace: false
+            });
+        }
+        return schedule;
+    }
+
+    function calculateLoan(amount, years, rate, graceMonths, type) {
+      const schedule = generateSchedule(amount, years, rate, graceMonths, type);
+      let totalInterest = 0, totalPayment = 0;
+      schedule.forEach(item => { totalInterest += item.interest; totalPayment += item.monthlyPayment; });
+      
+      let firstPayment = schedule.length > 0 ? schedule[0].monthlyPayment : 0;
+      return { monthlyPayment: firstPayment, totalInterest, totalPayment, schedule, type };
+    }
+
+    function showAmortizationDetails(loanResult, name) {
+        const contentDiv = document.getElementById('amortizationScheduleContent');
+        document.getElementById('modalTitle').textContent = `${name} - 還款細節表`;
+        
+        if (!loanResult || loanResult.schedule.length === 0) return;
+
+        let html = `
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50 sticky top-0">
+                        <tr>
+                            <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">期數</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">月付金</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">本金</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">利息</th>
+                            <th class="px-3 py-2 text-right text-xs font-medium text-gray-500">剩餘本金</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+        `;
+        loanResult.schedule.forEach(item => {
+            const rowClass = item.isGrace ? 'bg-yellow-50/50' : 'hover:bg-gray-50';
+            html += `<tr class="${rowClass}">
+                <td class="px-3 py-2">${item.isGrace ? item.period + '(寬)' : item.period}</td>
+                <td class="px-3 py-2 text-right font-medium">${formatNumber(item.monthlyPayment)}</td>
+                <td class="px-3 py-2 text-right text-gray-500">${formatNumber(item.principal)}</td>
+                <td class="px-3 py-2 text-right text-gray-500">${formatNumber(item.interest)}</td>
+                <td class="px-3 py-2 text-right text-gray-400">${formatNumber(item.remainingPrincipal)}</td>
+            </tr>`;
+        });
+        html += `</tbody></table></div>`;
+        contentDiv.innerHTML = html;
+        document.getElementById('detailsModal').style.display = 'flex';
+    }
+
+    function addLoanSet() {
+      const container = document.getElementById("loanContainer");
+      const id = loanIndex++;
+      const div = document.createElement("div");
+      div.id = `loanSet_${id}`;
+      div.className = "loan-set bg-white p-4 sm:p-6 rounded-xl shadow-md relative";
+      
+      div.innerHTML = `
+        <button onclick="removeLoanSet(${id})" class="absolute top-4 right-4 text-red-400 hover:text-red-600">
+            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path></svg>
+        </button>
+        <h2 class="text-lg font-semibold text-gray-700 mb-3">方案 ${id + 1}</h2>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">金額 (萬)</label>
+            <input type="number" id="amount${id}" placeholder="800" class="w-full px-3 py-2 border rounded-lg focus:ring-primary focus:border-primary">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">年限</label>
+            <select id="years${id}" class="w-full px-3 py-2 border rounded-lg bg-white">
+              <option value="20">20 年</option>
+              <option value="30" selected>30 年</option>
+              <option value="40">40 年</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">利率 (%)</label>
+            <input type="number" step="0.01" id="rate${id}" placeholder="2.06" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">寬限 (月)</label>
+            <input type="number" id="graceMonths${id}" value="0" class="w-full px-3 py-2 border rounded-lg">
+          </div>
+          <div class="col-span-2 sm:col-span-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">方式</label>
+            <select id="type${id}" class="w-full px-3 py-2 border rounded-lg bg-white">
+              <option value="interest">本息平均攤還 (月付固定)</option>
+              <option value="principal">本金平均攤還 (本金固定)</option>
+            </select>
+          </div>
+        </div>
+      `;
+      container.appendChild(div);
+      if (id === 0) {
+          document.getElementById(`amount${id}`).value = 1000;
+          document.getElementById(`rate${id}`).value = 2.185;
+      }
+    }
+
+    function removeLoanSet(id) {
+      const el = document.getElementById(`loanSet_${id}`);
+      if (el) { el.remove(); calculate(); }
+    }
+
+    function calculate() {
+      const allResults = [];
+      const resultDiv = document.getElementById("resultsTableContainer");
+      resultDiv.innerHTML = '';
+      let valid = 0;
+
+      for (let i = 0; i < loanIndex; i++) {
+        const el = document.getElementById(`loanSet_${i}`);
+        if (!el) continue;
+        const amount = parseFloat(document.getElementById(`amount${i}`).value) * 10000;
+        const years = parseFloat(document.getElementById(`years${i}`).value);
+        const rate = parseFloat(document.getElementById(`rate${i}`).value) / 100;
+        const grace = parseFloat(document.getElementById(`graceMonths${i}`).value) || 0;
+        const type = document.getElementById(`type${i}`).value;
+
+        if (amount > 0 && years > 0 && rate > 0) {
+            valid++;
+            const res = calculateLoan(amount, years, rate, grace, type);
+            allResults.push({ id: i, name: `方案 ${i+1}`, amount, ...res });
+        }
+      }
+
+      if (valid === 0) {
+          document.getElementById('initialMessage').classList.remove('hidden');
+          document.getElementById('chartContainer').classList.add('hidden');
+          return;
+      }
+
+      document.getElementById('initialMessage').classList.add('hidden');
+      document.getElementById('chartContainer').classList.remove('hidden');
+      allResults.sort((a, b) => a.totalInterest - b.totalInterest);
+      
+      let html = `<div class="overflow-x-auto"><table class="min-w-full text-sm text-left text-gray-500">
+        <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+            <tr><th>方案</th><th class="text-right">首期月付</th><th class="text-right">總利息</th><th class="text-right">總還款</th><th></th></tr>
+        </thead><tbody>`;
+      
+      allResults.forEach((r, idx) => {
+          const isBest = idx === 0;
+          html += `<tr class="bg-white border-b ${isBest ? 'bg-green-50' : ''}">
+            <td class="py-3 px-2 font-medium text-gray-900 whitespace-nowrap">${r.name} ${isBest?'<span class="text-xs bg-green-100 text-green-800 px-1 rounded">最佳</span>':''}</td>
+            <td class="py-3 px-2 text-right">${formatNumber(r.monthlyPayment)}</td>
+            <td class="py-3 px-2 text-right">${formatNumber(r.totalInterest)}</td>
+            <td class="py-3 px-2 text-right">${formatNumber(r.totalPayment)}</td>
+            <td class="py-3 px-2 text-right"><button onclick='showAmortizationDetails(window.allResults[${idx}], "${r.name}")' class="text-blue-600 hover:underline">明細</button></td>
+          </tr>`;
+      });
+      html += `</tbody></table></div>`;
+      resultDiv.innerHTML = html;
+      window.allResults = allResults; // Store for modal access
+
+      // Chart
+      const ctx = document.getElementById('comparisonChart').getContext('2d');
+      if (myChart) myChart.destroy();
+      myChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+              labels: allResults.map(r => r.name),
+              datasets: [
+                  { label: '利息', data: allResults.map(r => r.totalInterest), backgroundColor: '#f87171' },
+                  { label: '本金', data: allResults.map(r => r.amount), backgroundColor: '#10b981' }
+              ]
+          },
+          options: {
+              responsive: true, maintainAspectRatio: false,
+              scales: { x: { stacked: true }, y: { stacked: true } }
+          }
+      });
+    }
+
+    window.onload = function() {
+      addLoanSet();
+      addLoanSet();
+      // 預設選取比較頁籤
+      switchTab('comparison');
+    }
+  </script>
 </body>
 </html>
