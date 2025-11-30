@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管委會會議資料產生器 v16.0 (區塊清空功能)</title>
+    
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- 載入 React 和 ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    
+    <!-- 載入 Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- 載入字型 -->
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap');
+        body { font-family: 'Noto Sans TC', sans-serif; }
+        
+        /* 自定義捲軸 */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #ccc; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #999; }
+
+        /* --- v15 列印關鍵修正 --- */
+        @media print {
+            @page { 
+                size: A4 portrait; 
+                margin: 0;  /* 瀏覽器本身不留白，由 CSS 控制 */
+            }
+            
+            body { 
+                background-color: white !important; 
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* 隱藏所有非列印區塊 */
+            .no-print, .edit-panel { 
+                display: none !important; 
+                width: 0 !important;
+                height: 0 !important;
+                overflow: hidden !important;
+            }
+            
+            /* 重置外層容器，移除所有可能導致擠壓的 padding/margin */
+            .main-layout, .preview-wrapper {
+                display: block !important;
+                width: 100% !important;
+                height: auto !important;
+                overflow: visible !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                background: white !important;
+            }
+
+            /* A4 紙張本體設定 */
+            .print-sheet {
+                width: 210mm !important; /* 強制 A4 寬度 */
+                max-width: 210mm !important;
+                min-height: 297mm !important;
+                margin: 0 auto !important;
+                padding: 20mm !important; /* 標準 Word 邊界 */
+                background-color: white !important;
+                box-shadow: none !important;
+                overflow: visible !important; /* 允許內容跨頁 */
+            }
+
+            /* 避免表格被切斷 */
+            tr { page-break-inside: avoid; }
+            .avoid-break { page-break-inside: avoid; }
+        }
+        
+        /* 預覽區樣式 */
+        .word-table { width: 100%; border-collapse: collapse; margin-bottom: 15px; font-size: 14px; }
+        .word-table th, .word-table td { 
+            border: 1px solid #888; 
+            padding: 8px; 
+            vertical-align: middle; 
+        }
+        
+        .word-table th { 
+            background-color: #f8f9fa; /* 淺灰底色，列印較清楚 */
+            color: #2c3e50; 
+            font-weight: bold; 
+            border-bottom: 2px solid #2c3e50; 
+        }
+        
+        .section-header { 
+            background-color: transparent; 
+            color: #2c3e50;
+            padding: 5px 0 5px 12px;
+            font-size: 18px; 
+            font-weight: bold; 
+            margin-top: 25px; 
+            margin-bottom: 12px; 
+            border-left: 8px solid #2c3e50;
+            border-bottom: 1px solid #eee;
+        }
+
+        .issue-title-bar {
+            color: #2c3e50;
+            font-weight: bold;
+            padding: 8px 12px;
+            border-top: 2px solid #2c3e50;
+            border-bottom: 1px solid #ccc;
+            background-color: #fcfcfc;
+        }
+        
+        /* 財務小區塊樣式 */
+        .finance-block {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 15px;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 h-screen overflow-hidden">
+
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef, useEffect } = React;
+
+        // --- 圖示組件 ---
+        const Icon = ({ d, className }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>{d}</svg>
+        );
+        const Icons = {
+            Plus: (props) => <Icon {...props} d={<path d="M5 12h14M12 5v14" />} />,
+            Trash2: (props) => <Icon {...props} d={<><path d="M3 6h18M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2M10 11v6M14 11v6" /></>} />,
+            Printer: (props) => <Icon {...props} d={<><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" /><path d="M6 14h12v8H6z" /></>} />,
+            FileDown: (props) => <Icon {...props} d={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><path d="M12 18v-6" /><path d="m9 15 3 3 3-3" /></>} />,
+            FileText: (props) => <Icon {...props} d={<><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" /><polyline points="14 2 14 8 20 8" /><line x1="16" x2="8" y1="13" y2="13" /><line x1="16" x2="8" y1="17" y2="17" /><line x1="10" x2="8" y1="9" y2="9" /></>} />,
+            DollarSign: (props) => <Icon {...props} d={<><line x1="12" x2="12" y1="1" y2="23" /><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" /></>} />,
+            Calendar: (props) => <Icon {...props} d={<><rect width="18" height="18" x="3" y="4" rx="2" ry="2" /><line x1="16" x2="16" y1="2" y2="6" /><line x1="8" x2="8" y1="2" y2="6" /><line x1="3" x2="21" y1="10" y2="10" /></>} />,
+            Users: (props) => <Icon {...props} d={<><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></>} />,
+            Save: (props) => <Icon {...props} d={<><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /><polyline points="17 21 17 13 7 13 7 21" /><polyline points="7 3 7 8 15 8" /></>} />,
+            FolderOpen: (props) => <Icon {...props} d={<><path d="m6 14 1.45-2.9A2 2 0 0 1 9.24 10H20a2 2 0 0 1 1.94 2.5l-1.55 6a2 2 0 0 1-1.94 1.5H4a2 2 0 0 1-2-2V5c0-1.1.9-2 2-2h3.93a2 2 0 0 1 1.66.9l.82 1.2a2 2 0 0 0 1.66.9H18a2 2 0 0 1 2 2v2" /></>} />,
+            RotateCcw: (props) => <Icon {...props} d={<><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></>} />,
+            ChevronDown: (props) => <Icon {...props} d={<polyline points="6 9 12 15 18 9" />} />,
+            ChevronUp: (props) => <Icon {...props} d={<polyline points="18 15 12 9 6 15" />} />,
+            ArrowUp: (props) => <Icon {...props} d={<><line x1="12" y1="19" x2="12" y2="5" /><polyline points="5 12 12 5 19 12" /></>} />,
+            ArrowDown: (props) => <Icon {...props} d={<><line x1="12" y1="5" x2="12" y2="19" /><polyline points="19 12 12 19 5 12" /></>} />,
+            Pen: (props) => <Icon {...props} d={<><path d="M12 19l7-7 3 3-7 7-3-3z" /><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z" /><path d="M2 2l7.586 7.586" /><circle cx="11" cy="11" r="2" /></>} />,
+            Eraser: (props) => <Icon {...props} d={<><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.6-9.6c1-1 2.5-1 3.4 0l5.6 5.6c1 1 1 2.5 0 3.4L13 21" /><path d="M22 21H7" /><path d="m5 11 9 9" /></>} />
+        };
+
+        // --- 組件定義 ---
+        const AccordionSection = ({ title, icon: IconComponent, isOpen, onToggle, children, onClear }) => (
+            <div className="border rounded-lg mb-4 bg-white shadow-sm overflow-hidden">
+                <button 
+                    onClick={onToggle}
+                    className={`w-full flex items-center justify-between p-4 text-left font-bold transition-colors ${isOpen ? 'bg-blue-50 text-blue-800' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+                >
+                    <div className="flex items-center gap-2">
+                        <IconComponent className="w-5 h-5" />
+                        {title}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {onClear && (
+                            <div 
+                                onClick={(e) => { e.stopPropagation(); onClear(); }}
+                                className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                title="清空此區塊"
+                            >
+                                <Icons.Eraser className="w-4 h-4" />
+                            </div>
+                        )}
+                        {isOpen ? <Icons.ChevronUp className="w-4 h-4" /> : <Icons.ChevronDown className="w-4 h-4" />}
+                    </div>
+                </button>
+                {isOpen && <div className="p-4 border-t">{children}</div>}
+            </div>
+        );
+
+        // 財務列表編輯器組件
+        const FinanceListEditor = ({ title, listName, items, colorClass = "bg-gray-50", onUpdate, onAdd, onRemove, onMove, calculateTotal, onClearList }) => (
+            <div className={`p-3 rounded border border-gray-200 mb-4 ${colorClass}`}>
+                <div className="flex justify-between items-end mb-2">
+                    <label className="text-sm font-bold text-gray-700">{title}</label>
+                    <div className="flex items-center gap-2">
+                        <span className="text-xs bg-white border px-2 py-1 rounded text-gray-700 font-mono">
+                            合計: ${calculateTotal(items)}
+                        </span>
+                        <button 
+                            onClick={() => onClearList(listName)}
+                            className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded"
+                            title="清空此列表"
+                        >
+                            <Icons.Eraser className="w-3 h-3" />
+                        </button>
+                    </div>
+                </div>
+                <div className="space-y-2">
+                    {items.map((item, index) => (
+                        <div key={item.id} className="flex flex-col gap-1 p-2 bg-white border rounded shadow-sm">
+                            <div className="flex gap-1 mb-1">
+                                <input type="text" value={item.label} onChange={(e) => onUpdate(listName, item.id, 'label', e.target.value)} className="flex-grow p-1.5 border rounded text-sm" placeholder="項目說明" />
+                                <input type="text" value={item.amount} onChange={(e) => onUpdate(listName, item.id, 'amount', e.target.value)} className="w-24 p-1.5 border rounded text-sm text-right font-mono" placeholder="金額" />
+                            </div>
+                            <div className="flex justify-between items-center bg-gray-50 p-1 rounded">
+                                <div className="flex gap-1">
+                                    <button onClick={() => onMove(listName, index, -1)} className="p-1 text-gray-400 hover:text-blue-600 disabled:opacity-30" disabled={index === 0}><Icons.ArrowUp className="w-3 h-3" /></button>
+                                    <button onClick={() => onMove(listName, index, 1)} className="p-1 text-gray-400 hover:text-blue-600 disabled:opacity-30" disabled={index === items.length - 1}><Icons.ArrowDown className="w-3 h-3" /></button>
+                                </div>
+                                <button onClick={() => onRemove(listName, item.id)} className="text-red-400 hover:text-red-600 text-xs flex items-center gap-1 px-2 py-0.5 rounded hover:bg-red-50">
+                                    <Icons.Trash2 className="w-3 h-3" /> 刪除
+                                </button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+                <button onClick={() => onAdd(listName)} className="w-full mt-3 py-1.5 border-2 border-dashed border-gray-300 text-gray-500 rounded hover:bg-white hover:text-gray-600 text-xs font-bold flex justify-center items-center gap-1">
+                    <Icons.Plus className="w-3 h-3" /> 新增項目
+                </button>
+            </div>
+        );
+
+        // 財務列表預覽組件
+        const FinanceListPreview = ({ title, items, calculateTotal }) => (
+            <div className="avoid-break" style={{marginBottom: '15px'}}>
+                <div style={{padding: '5px', fontWeight: 'bold', marginBottom: '5px', borderBottom: '1px solid #ccc', color: '#2c3e50', fontSize: '14px'}}>
+                    {title}
+                </div>
+                <table style={{width: '100%', borderCollapse: 'collapse', fontSize: '13px'}}>
+                    <tbody>
+                        {items.map((item, idx) => (
+                            <tr key={item.id} style={{borderBottom: '1px dashed #eee'}}>
+                                <td style={{border: 'none', padding: '4px 0', width: '30px', color: '#666', verticalAlign: 'top'}}>{idx + 1}</td>
+                                <td style={{border: 'none', padding: '4px 0'}}>{item.label}</td>
+                                <td style={{border: 'none', padding: '4px 0', textAlign: 'right', fontFamily: 'monospace', fontWeight: item.amount.startsWith('-') ? 'bold' : 'normal', color: item.amount.startsWith('-') ? '#c0392b' : 'inherit'}}>
+                                    ${item.amount}
+                                </td>
+                            </tr>
+                        ))}
+                        <tr style={{borderTop: '2px solid #ccc'}}>
+                            <td colSpan="2" style={{border: 'none', padding: '6px 0', fontWeight: 'bold', textAlign: 'right', fontSize: '13px'}}>總計：</td>
+                            <td style={{border: 'none', padding: '6px 0', textAlign: 'right', fontFamily: 'monospace', fontWeight: 'bold', fontSize: '14px'}}>
+                                ${calculateTotal(items)}
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        );
+
+        function MeetingAgendaGenerator() {
+            // --- 預設資料 ---
+            const defaultInfo = {
+                title: "國際ONE社區 第一屆管理委員會",
+                subTitle: "11月份例行會議記錄",
+                date: "2025年11月21日(五) 20:00",
+                location: "社區R樓 會議室",
+                chair: "蕭良諭 主委",
+                recorder: "天安物業 趙金友",
+                attendees: "主任委員: 蕭良諭\n監察委員: 陳尚威\n財務委員: 金德如\n管理委員: 洪晨晏\n店面委員: 黃智俊",
+                guests: "天安物業 于副總",
+                expectedCount: "5",
+                actualCount: "5",
+                leaveCount: "0",
+                absentCount: "0",
+                showSignatures: true,
+                announcementDate: `${new Date().getFullYear() - 1911}年${new Date().getMonth() + 1}月${new Date().getDate()}日` 
+            };
+
+            const defaultStats = {
+                date: "2025/11/14",
+                total: "77",
+                handedOver: "54",
+                unsold: "23",
+                movedIn: "29",
+                rented: "04",
+                noDeco: "12",
+                deco: "09"
+            };
+
+            const defaultFinance = {
+                date: "2025/11/21",
+                balance: "2,732,373", 
+                items: [ 
+                    { id: 1, label: "10月物業保全服務費", amount: "353,850" },
+                    { id: 2, label: "裝潢戶退暫收款保證金", amount: "105,000" },
+                    { id: 3, label: "零用金撥補(退還監委代墊)", amount: "10,000" },
+                    { id: 4, label: "10月大公電費", amount: "22,270" },
+                    { id: 5, label: "10月小公電費", amount: "6,375" },
+                    { id: 6, label: "線路設置費", amount: "16,500" }
+                ],
+                pendingItems: [ 
+                    { id: 1, label: "10月市話及網路費", amount: "2,588" }
+                ],
+                receivableItems: [ 
+                    { id: 1, label: "目前已繳管理費 (共35戶)", amount: "135,804" },
+                    { id: 2, label: "目前未繳管理費 (共16戶)", amount: "-81,999" },
+                    { id: 3, label: "目前未繳管理費 (建商未售戶)", amount: "-139,034" }
+                ]
+            };
+
+            const defaultIssues = [
+                {
+                    id: 1,
+                    title: "議題一、委由第三方檢驗進度報告",
+                    desc: "簽約狀態：第三方檢驗廠商已確定為國霖機電，已於11/16完成簽約用印。\n說明：\n合約期間：114/12/01~115/11/30 (共一年)。\n下一步驟：目前正在向建商索取圖說，取得圖說後，即可安排進場檢驗日期。",
+                    resolution: "1. 同意僅先與建商點交各項圖說，以利後續公設點交事宜。\n2. 發公告邀請社區具有機電、消防及土木等專業領域之住戶共同參與點交事宜。\n3. 請全體住戶留意本社區建築本體、設備及設施等，若發現有缺失之處請利用管委會小公缺失回報系統或向管理服務中心反應。"
+                },
+                {
+                    id: 2,
+                    title: "議題二、住戶垃圾處理討論",
+                    desc: "現況說明：管理中心已增設回收太空包，並張貼宣導，但住戶落實度依然低落，垃圾混雜情況嚴重。\n潛在風險：若遭環保局稽查發現未落實分類，社區將面臨行政裁罰(罰款)。",
+                    resolution: "目前社區公設因尚未點交，資源回收室設備尚無法使用，請管理服務中心協調建商，先將垃圾子母車撥予社區使用，藉以暫時解決此問題。"
+                }
+            ];
+
+            const defaultTempMotions = [];
+
+            // --- State ---
+            const [info, setInfo] = useState(defaultInfo);
+            const [stats, setStats] = useState(defaultStats);
+            const [finance, setFinance] = useState(defaultFinance);
+            const [issues, setIssues] = useState(defaultIssues);
+            const [tempMotions, setTempMotions] = useState(defaultTempMotions);
+            const [msg, setMsg] = useState("");
+            const [showClearModal, setShowClearModal] = useState(false);
+            const [expandedSection, setExpandedSection] = useState("info");
+
+            const printAreaRef = useRef();
+
+            // --- Helpers ---
+            const numberToChinese = (num) => {
+                const map = ["零", "一", "二", "三", "四", "五", "六", "七", "八", "九", "十"];
+                if (num <= 10) return map[num];
+                 if (num < 20) return "十" + map[num % 10];
+                 const tens = Math.floor(num / 10);
+                 const units = num % 10;
+                 return map[tens] + "十" + (units > 0 ? map[units] : "");
+            };
+
+            const handleDateSelect = (e, targetStateSetter, fieldName, mode = 'date') => {
+                const dateValue = e.target.value;
+                if (!dateValue) return;
+                const dateObj = new Date(dateValue);
+                const yearROC = dateObj.getFullYear() - 1911;
+                const month = dateObj.getMonth() + 1;
+                const day = dateObj.getDate();
+                const weekDayMap = ['日', '一', '二', '三', '四', '五', '六'];
+                const weekDay = weekDayMap[dateObj.getDay()];
+                
+                let formatted = "";
+                if (mode === 'datetime' || mode === true) {
+                    const hours = String(dateObj.getHours()).padStart(2, '0');
+                    const minutes = String(dateObj.getMinutes()).padStart(2, '0');
+                    formatted = `${yearROC}年${month}月${day}日(${weekDay}) ${hours}:${minutes}`;
+                } else if (mode === 'roc-date') {
+                     formatted = `${yearROC}年${month}月${day}日`;
+                } else {
+                    formatted = `${yearROC}/${String(month).padStart(2,'0')}/${String(day).padStart(2,'0')}`;
+                }
+                targetStateSetter(prev => ({ ...prev, [fieldName]: formatted }));
+            };
+
+            const calculateTotal = (items) => {
+                if (!items) return "0";
+                return items.reduce((acc, item) => {
+                    const cleanStr = (item.amount || "0").replace(/,/g, '');
+                    const val = parseInt(cleanStr, 10);
+                    return acc + (isNaN(val) ? 0 : val);
+                }, 0).toLocaleString();
+            };
+
+            // --- 資料操作 ---
+            const saveData = () => {
+                const data = { info, stats, finance, issues, tempMotions };
+                localStorage.setItem('meeting_data_v16', JSON.stringify(data));
+                showMsg("✅ 資料已儲存！");
+            };
+
+            const loadData = () => {
+                const saved = localStorage.getItem('meeting_data_v16');
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    setInfo({...defaultInfo, ...parsed.info});
+                    setStats(parsed.stats || defaultStats);
+                    setFinance({ ...defaultFinance, ...parsed.finance });
+                    setIssues(parsed.issues || defaultIssues);
+                    setTempMotions(parsed.tempMotions || defaultTempMotions);
+                    showMsg("📂 資料已讀取！");
+                } else {
+                    const oldSaved = localStorage.getItem('meeting_data_v15');
+                    if(oldSaved) {
+                         const parsed = JSON.parse(oldSaved);
+                         setInfo({...defaultInfo, ...parsed.info});
+                         setStats(parsed.stats || defaultStats);
+                         setFinance({...defaultFinance, ...parsed.finance}); 
+                         setIssues(parsed.issues || defaultIssues);
+                         setTempMotions(parsed.tempMotions || defaultTempMotions);
+                         showMsg("📂 已讀取 v15 資料！");
+                    } else {
+                        showMsg("⚠️ 無儲存紀錄");
+                    }
+                }
+            };
+
+            const clearData = () => {
+                setInfo(defaultInfo);
+                setStats(defaultStats);
+                setFinance(defaultFinance);
+                setIssues(defaultIssues);
+                setTempMotions(defaultTempMotions);
+                setShowClearModal(false);
+                showMsg("🔄 已重置");
+            };
+
+            const showMsg = (text) => {
+                setMsg(text);
+                setTimeout(() => setMsg(""), 3000);
+            };
+
+            const moveItem = (list, setList, index, direction) => {
+                if ((direction === -1 && index === 0) || (direction === 1 && index === list.length - 1)) return;
+                const newList = [...list];
+                const temp = newList[index];
+                newList[index] = newList[index + direction];
+                newList[index + direction] = temp;
+                setList(newList);
+            };
+
+            const handleInfoChange = (e) => {
+                const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
+                setInfo(prev => ({ ...prev, [e.target.name]: value }));
+            };
+            const handleStatsChange = (e) => setStats({ ...stats, [e.target.name]: e.target.value });
+            
+            const updateFinanceItem = (listName, id, field, value) => {
+                setFinance(prevFinance => {
+                    const list = prevFinance[listName];
+                    const newItems = list.map(item => {
+                        if (item.id === id) {
+                            if (field === 'amount') {
+                                const isNegative = value.startsWith('-');
+                                const numericValue = value.replace(/[^0-9]/g, '');
+                                const formatted = numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                                return { ...item, [field]: isNegative ? `-${formatted}` : formatted };
+                            }
+                            return { ...item, [field]: value };
+                        }
+                        return item;
+                    });
+                    return { ...prevFinance, [listName]: newItems };
+                });
+            };
+
+            const addFinanceItem = (listName) => {
+                setFinance(prevFinance => {
+                    const list = prevFinance[listName];
+                    const newId = list.length > 0 ? Math.max(...list.map(i => i.id)) + 1 : 1;
+                    return { ...prevFinance, [listName]: [...list, { id: newId, label: "", amount: "0" }] };
+                });
+            };
+
+            const removeFinanceItem = (listName, id) => {
+                setFinance(prevFinance => ({ ...prevFinance, [listName]: prevFinance[listName].filter(i => i.id !== id) }));
+            };
+
+            const moveFinanceItem = (listName, index, direction) => {
+                setFinance(prevFinance => {
+                    const list = prevFinance[listName];
+                    if ((direction === -1 && index === 0) || (direction === 1 && index === list.length - 1)) return prevFinance;
+                    const newList = [...list];
+                    const temp = newList[index];
+                    newList[index] = newList[index + direction];
+                    newList[index + direction] = temp;
+                    return { ...prevFinance, [listName]: newList };
+                });
+            };
+
+            // 清空特定財務列表功能
+            const clearFinanceList = (listName) => {
+                if(confirm('確定要清空此列表的所有項目嗎？')) {
+                    setFinance(prev => ({ ...prev, [listName]: [] }));
+                }
+            };
+
+            const updateIssue = (id, field, value) => setIssues(issues.map(item => item.id === id ? { ...item, [field]: value } : item));
+            const addIssue = () => {
+                const newId = issues.length > 0 ? Math.max(...issues.map(i => i.id)) + 1 : 1;
+                const nextNum = issues.length + 1;
+                const titlePrefix = `議題${numberToChinese(nextNum)}、`;
+                setIssues([...issues, { id: newId, title: `${titlePrefix}`, desc: "", resolution: "" }]);
+            };
+            const removeIssue = (id) => setIssues(issues.filter(i => i.id !== id));
+            const clearIssues = () => {
+                if(confirm('確定要清空所有議題嗎？')) {
+                    setIssues([]);
+                }
+            };
+
+            const updateTempMotion = (id, field, value) => setTempMotions(tempMotions.map(item => item.id === id ? { ...item, [field]: value } : item));
+            const addTempMotion = () => {
+                const newId = tempMotions.length > 0 ? Math.max(...tempMotions.map(i => i.id)) + 1 : 1;
+                setTempMotions([...tempMotions, { id: newId, desc: "", resolution: "" }]);
+            };
+            const removeTempMotion = (id) => setTempMotions(tempMotions.filter(i => i.id !== id));
+            const clearTempMotions = () => {
+                if(confirm('確定要清空所有臨時動議嗎？')) {
+                    setTempMotions([]);
+                }
+            };
+
+            const handlePrint = () => window.print();
+            
+            const handleExportWord = () => {
+                const header = `
+                    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+                    <head>
+                        <meta charset='utf-8'>
+                        <title>${info.title}</title>
+                        <style>
+                            body { font-family: 'PMingLiU', 'MingLiU', sans-serif; color: #000; font-size: 12pt; }
+                            table { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
+                            td, th { border: 1px solid #666; padding: 8px; vertical-align: top; }
+                            th { font-weight: bold; background-color: #f0f0f0; }
+                            .section-header { 
+                                font-weight: bold; font-size: 14pt; margin-top: 20px; margin-bottom: 10px;
+                                background-color: #f0f0f0; padding: 5px;
+                            }
+                            .finance-header { font-weight: bold; border-bottom: 1px solid #000; padding-bottom: 5px; margin-top: 10px; }
+                        </style>
+                    </head><body>`;
+                const footer = "</body></html>";
+                let contentHTML = printAreaRef.current.innerHTML;
+                let sourceHTML = header + contentHTML + footer;
+                const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                const fileDownload = document.createElement("a");
+                document.body.appendChild(fileDownload);
+                fileDownload.href = source;
+                fileDownload.download = `會議記錄_${info.date.split(' ')[0] || 'export'}.doc`;
+                fileDownload.click();
+                document.body.removeChild(fileDownload);
+            };
+
+            return (
+                <div className="flex flex-col lg:flex-row h-screen bg-gray-100 font-sans overflow-hidden main-layout">
+                    
+                    {/* 左側：編輯區 */}
+                    <div className="w-full lg:w-[450px] h-full overflow-y-auto bg-gray-50 border-r border-gray-200 no-print flex flex-col shadow-xl z-20 edit-panel">
+                         {/* 控制列 */}
+                        <div className="sticky top-0 bg-white z-20 p-4 border-b shadow-sm">
+                            <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2 mb-3">
+                                <div className="p-2 bg-blue-600 rounded-lg text-white">
+                                    <Icons.FileText className="w-5 h-5" />
+                                </div>
+                                會議資料產生器 v16.0
+                            </h2>
+                            <div className="grid grid-cols-3 gap-2">
+                                <button onClick={saveData} className="flex items-center justify-center gap-1 bg-green-600 text-white py-2 rounded hover:bg-green-700 font-bold text-sm shadow-sm"><Icons.Save className="w-4 h-4"/> 儲存</button>
+                                <button onClick={loadData} className="flex items-center justify-center gap-1 bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50 font-bold text-sm shadow-sm"><Icons.FolderOpen className="w-4 h-4"/> 讀取</button>
+                                <button onClick={() => setShowClearModal(true)} className="flex items-center justify-center gap-1 bg-white border border-gray-300 text-gray-700 py-2 rounded hover:bg-gray-50 font-bold text-sm shadow-sm"><Icons.RotateCcw className="w-4 h-4"/> 重置</button>
+                            </div>
+                            {msg && <div className="mt-2 text-center text-sm font-bold text-green-600 bg-green-50 p-1 rounded animate-pulse">{msg}</div>}
+                        </div>
+
+                        <div className="p-4 flex-grow">
+                            {/* 1. 基本資訊 */}
+                            <AccordionSection title="1. 基本資訊 & 簽名" icon={Icons.Calendar} isOpen={expandedSection === 'info'} onToggle={() => setExpandedSection(expandedSection === 'info' ? '' : 'info')}>
+                                <div className="space-y-3">
+                                    <input type="text" name="title" value={info.title} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm" placeholder="主標題" />
+                                    <input type="text" name="subTitle" value={info.subTitle} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm" placeholder="副標題" />
+                                    <div className="relative">
+                                        <input type="text" name="date" value={info.date} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm" placeholder="日期" />
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-0"><Icons.Calendar className="w-4 h-4" /></div>
+                                        <input type="datetime-local" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => handleDateSelect(e, setInfo, 'date', true)} />
+                                    </div>
+                                    <input type="text" name="location" value={info.location} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm" placeholder="地點" />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <input type="text" name="chair" value={info.chair} onChange={handleInfoChange} className="p-2 border rounded text-sm" placeholder="主席" />
+                                        <input type="text" name="recorder" value={info.recorder} onChange={handleInfoChange} className="p-2 border rounded text-sm" placeholder="紀錄" />
+                                    </div>
+                                    <textarea name="attendees" value={info.attendees} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm h-32" placeholder="出席委員 (建議條列式)" />
+                                    <input type="text" name="guests" value={info.guests} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm" placeholder="列席人員" />
+                                    <div className="grid grid-cols-4 gap-2 text-sm bg-gray-100 p-2 rounded">
+                                        <label className="flex flex-col text-xs font-bold">應到 <input type="text" name="expectedCount" value={info.expectedCount} onChange={handleInfoChange} className="mt-1 p-1 border rounded text-center" /></label>
+                                        <label className="flex flex-col text-xs font-bold">實到 <input type="text" name="actualCount" value={info.actualCount} onChange={handleInfoChange} className="mt-1 p-1 border rounded text-center" /></label>
+                                        <label className="flex flex-col text-xs font-bold">請假 <input type="text" name="leaveCount" value={info.leaveCount} onChange={handleInfoChange} className="mt-1 p-1 border rounded text-center" /></label>
+                                        <label className="flex flex-col text-xs font-bold">缺席 <input type="text" name="absentCount" value={info.absentCount} onChange={handleInfoChange} className="mt-1 p-1 border rounded text-center" /></label>
+                                    </div>
+                                    <label className="flex items-center gap-2 text-sm font-bold cursor-pointer pt-2 border-t"><input type="checkbox" name="showSignatures" checked={info.showSignatures} onChange={handleInfoChange} /> 顯示簽名欄位</label>
+                                    
+                                    {/* 公告日期選擇 */}
+                                    <div className="pt-2 border-t mt-2">
+                                        <label className="text-xs text-gray-500 font-bold mb-1 block">公告日期</label>
+                                        <div className="relative">
+                                            <input type="text" name="announcementDate" value={info.announcementDate} onChange={handleInfoChange} className="w-full p-2 border rounded text-sm" placeholder="公告日期" />
+                                            <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-0"><Icons.Calendar className="w-4 h-4" /></div>
+                                            <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => handleDateSelect(e, setInfo, 'announcementDate', 'roc-date')} />
+                                        </div>
+                                    </div>
+                                </div>
+                            </AccordionSection>
+
+                            {/* 2. 住戶統計 */}
+                            <AccordionSection title="2. 住戶統計" icon={Icons.Users} isOpen={expandedSection === 'stats'} onToggle={() => setExpandedSection(expandedSection === 'stats' ? '' : 'stats')}>
+                                <div className="space-y-3">
+                                    <div className="relative">
+                                        <input type="text" name="date" value={stats.date} onChange={handleStatsChange} className="w-full p-2 border rounded text-sm" />
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-0"><Icons.Calendar className="w-4 h-4" /></div>
+                                        <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => handleDateSelect(e, setStats, 'date', false)} />
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-3 text-sm">
+                                        {['total:總戶數', 'handedOver:已交屋', 'unsold:未售屋', 'movedIn:已入住', 'rented:承租戶', 'noDeco:未裝潢', 'deco:裝潢戶'].map(item => {
+                                            const [key, label] = item.split(':');
+                                            return (<div key={key} className='flex flex-col'><span className="text-xs text-gray-500 mb-1">{label}</span><input type="text" name={key} value={stats[key]} onChange={handleStatsChange} className="p-2 border rounded text-center font-mono" /></div>);
+                                        })}
+                                    </div>
+                                </div>
+                            </AccordionSection>
+
+                            {/* 3. 財務收支 (大幅升級) */}
+                            <AccordionSection title="3. 財務收支 (擴充版)" icon={Icons.DollarSign} isOpen={expandedSection === 'finance'} onToggle={() => setExpandedSection(expandedSection === 'finance' ? '' : 'finance')}>
+                                <div className="relative mb-3">
+                                    <label className="text-xs text-gray-500 font-bold">統計日期</label>
+                                    <div className="relative">
+                                        <input type="text" value={finance.date} onChange={(e)=>setFinance({...finance, date: e.target.value})} className="w-full p-2 border rounded text-sm" />
+                                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none z-0"><Icons.Calendar className="w-4 h-4" /></div>
+                                        <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10" onChange={(e) => handleDateSelect(e, setFinance, 'date', false)} />
+                                    </div>
+                                </div>
+                                
+                                <div className="bg-green-50 p-3 rounded border border-green-200 mb-4">
+                                    <label className="text-xs text-green-700 font-bold uppercase">A. 存摺餘額</label>
+                                    <input type="text" value={finance.balance} onChange={(e)=> setFinance({...finance, balance: e.target.value.replace(/[^0-9]/g, '').replace(/\B(?=(\d{3})+(?!\d))/g, ",")})} className="w-full p-2 border border-green-300 rounded text-lg font-mono font-bold text-right text-green-800 bg-white" />
+                                </div>
+
+                                <FinanceListEditor title="B. 本期已付款項" listName="items" items={finance.items} colorClass="bg-red-50" onUpdate={updateFinanceItem} onAdd={addFinanceItem} onRemove={removeFinanceItem} onMove={moveFinanceItem} calculateTotal={calculateTotal} onClearList={clearFinanceList} />
+                                <FinanceListEditor title="C. 本期待付款項" listName="pendingItems" items={finance.pendingItems} colorClass="bg-yellow-50" onUpdate={updateFinanceItem} onAdd={addFinanceItem} onRemove={removeFinanceItem} onMove={moveFinanceItem} calculateTotal={calculateTotal} onClearList={clearFinanceList} />
+                                <FinanceListEditor title="D. 本期管理費應收" listName="receivableItems" items={finance.receivableItems} colorClass="bg-blue-50" onUpdate={updateFinanceItem} onAdd={addFinanceItem} onRemove={removeFinanceItem} onMove={moveFinanceItem} calculateTotal={calculateTotal} onClearList={clearFinanceList} />
+                            </AccordionSection>
+
+                            {/* 4. 議題討論 */}
+                            <AccordionSection title="4. 議題討論" icon={Icons.FileText} isOpen={expandedSection === 'issues'} onToggle={() => setExpandedSection(expandedSection === 'issues' ? '' : 'issues')} onClear={clearIssues}>
+                                <div className="space-y-4">
+                                    {issues.map((issue, index) => (
+                                        <div key={issue.id} className="p-3 border rounded bg-white shadow-sm">
+                                            <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                                                <span className="text-xs font-bold text-gray-500">議題 {index + 1}</span>
+                                                <div className="flex gap-1">
+                                                    <button onClick={() => moveItem(issues, setIssues, index, -1)} className="p-1 hover:bg-gray-100 rounded text-gray-500" disabled={index === 0}><Icons.ArrowUp className="w-4 h-4" /></button>
+                                                    <button onClick={() => moveItem(issues, setIssues, index, 1)} className="p-1 hover:bg-gray-100 rounded text-gray-500" disabled={index === issues.length - 1}><Icons.ArrowDown className="w-4 h-4" /></button>
+                                                    <button onClick={() => removeIssue(issue.id)} className="p-1 hover:bg-red-50 text-red-400 rounded"><Icons.Trash2 className="w-4 h-4" /></button>
+                                                </div>
+                                            </div>
+                                            <input type="text" value={issue.title} onChange={(e) => updateIssue(issue.id, 'title', e.target.value)} className="w-full mb-2 p-2 border rounded font-bold bg-gray-50" />
+                                            <textarea value={issue.desc} onChange={(e) => updateIssue(issue.id, 'desc', e.target.value)} className="w-full p-2 border rounded text-sm h-24 mb-2" placeholder="說明..." />
+                                            <div className="flex items-start gap-2">
+                                                <div className="pt-2 text-red-600 font-bold text-xs whitespace-nowrap">決議</div>
+                                                <textarea value={issue.resolution} onChange={(e) => updateIssue(issue.id, 'resolution', e.target.value)} className="w-full p-2 border rounded text-sm bg-red-50 text-red-900 h-16" placeholder="決議內容" />
+                                            </div>
+                                        </div>
+                                    ))}
+                                    <button onClick={addIssue} className="w-full py-2 bg-blue-50 text-blue-600 rounded border border-blue-100 hover:bg-blue-100 font-bold text-sm flex justify-center items-center gap-2"><Icons.Plus className="w-4 h-4"/> 新增議題</button>
+                                </div>
+                            </AccordionSection>
+
+                            {/* 5. 臨時動議 */}
+                            <AccordionSection title="5. 臨時動議" icon={Icons.Pen} isOpen={expandedSection === 'motions'} onToggle={() => setExpandedSection(expandedSection === 'motions' ? '' : 'motions')} onClear={clearTempMotions}>
+                                <div className="space-y-4">
+                                    {tempMotions.map((tm, index) => (
+                                        <div key={tm.id} className="p-3 border rounded bg-white shadow-sm">
+                                            <div className="flex justify-between items-center mb-2 pb-2 border-b">
+                                                <span className="text-xs font-bold text-gray-500">動議 {index + 1}</span>
+                                                <button onClick={() => removeTempMotion(tm.id)} className="text-red-400 hover:text-red-600"><Icons.Trash2 className="w-4 h-4" /></button>
+                                            </div>
+                                            <textarea value={tm.desc} onChange={(e) => updateTempMotion(tm.id, 'desc', e.target.value)} className="w-full p-2 border rounded text-sm mb-2" placeholder="說明..." />
+                                            <textarea value={tm.resolution} onChange={(e) => updateTempMotion(tm.id, 'resolution', e.target.value)} className="w-full p-2 border rounded text-sm bg-red-50 text-red-900" placeholder="決議..." />
+                                        </div>
+                                    ))}
+                                    <button onClick={addTempMotion} className="w-full py-2 border-2 border-dashed border-gray-300 text-gray-500 rounded hover:bg-gray-50 font-bold text-sm flex justify-center items-center gap-2"><Icons.Plus className="w-4 h-4"/> 新增臨時動議</button>
+                                </div>
+                            </AccordionSection>
+                        </div>
+                    </div>
+
+                    {/* 右側：預覽區 (白色背景) */}
+                    <div className="flex-grow h-full bg-white overflow-y-auto p-4 lg:p-8 flex flex-col items-center relative print-reset-bg preview-wrapper">
+                        <div className="fixed bottom-8 right-8 flex flex-col gap-3 no-print z-50">
+                            <button onClick={handleExportWord} className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-4 rounded-full shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105" title="匯出 Word"><Icons.FileDown className="w-6 h-6" /></button>
+                            <button onClick={handlePrint} className="bg-gray-800 hover:bg-gray-900 text-white px-5 py-4 rounded-full shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105" title="列印"><Icons.Printer className="w-6 h-6" /></button>
+                        </div>
+
+                        <div ref={printAreaRef} className="bg-white w-full max-w-[210mm] min-h-[297mm] p-[20mm] box-border text-[#333] leading-relaxed print-reset-bg mx-auto print-sheet" style={{ fontFamily: "'Noto Sans TC', sans-serif" }}>
+                            
+                            {/* 標題 */}
+                            <div style={{textAlign: 'center', borderBottom: '2px solid #2c3e50', paddingBottom: '10px', marginBottom: '20px'}}>
+                                <h1 style={{fontSize: '24px', fontWeight: 'bold', margin: 0, color: '#2c3e50'}}>{info.title}</h1>
+                                <h2 style={{fontSize: '18px', fontWeight: '500', marginTop: '5px', color: '#2c3e50'}}>{info.subTitle}</h2>
+                            </div>
+
+                            {/* 1. 基本資訊 */}
+                            <table className="word-table">
+                                <tbody>
+                                    <tr>
+                                        <th style={{width: '15%'}}>開會時間</th>
+                                        <td style={{width: '35%'}}>{info.date}</td>
+                                        <th style={{width: '15%'}}>開會地點</th>
+                                        <td style={{width: '35%'}}>{info.location}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>會議主席</th>
+                                        <td>{info.chair}</td>
+                                        <th>會議紀錄</th>
+                                        <td>{info.recorder}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>應到/實到</th>
+                                        <td>應到 {info.expectedCount} / 實到 {info.actualCount || '__'}</td>
+                                        <th>請假/缺席</th>
+                                        <td>請假 {info.leaveCount || '__'} / 缺席 {info.absentCount || '__'}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>出席委員</th>
+                                        <td colSpan="3" style={{whiteSpace: 'pre-wrap'}}>{info.attendees}</td>
+                                    </tr>
+                                    <tr>
+                                        <th>列席人員</th>
+                                        <td colSpan="3">{info.guests}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+
+                            {/* 壹 */}
+                            <div className="section-header">壹、主席宣佈開會及致詞</div>
+                            <p style={{margin: '10px 0'}}>本次會議為第一屆管理委員會{info.subTitle}。應出席委員{info.expectedCount}人，實際出席委員{info.actualCount}人，請假{info.leaveCount}人，缺席{info.absentCount}人，已達會議法定人數。</p>
+                            <p>請主席宣佈會議開始並致詞。</p>
+
+                            {/* 貳 */}
+                            <div className="section-header">貳、財務及社區現況報告</div>
+                            <p style={{margin: '10px 0'}}><strong>(一) 住戶現況統計</strong> <span style={{fontSize: '12px', color: '#666'}}>(統計至 {stats.date})</span></p>
+                            <table className="word-table text-center">
+                                <thead><tr><th>總戶數</th><th>未售屋</th><th>已交屋</th><th>已入住</th><th>承租戶</th><th>未裝潢</th><th>裝潢戶</th></tr></thead>
+                                <tbody><tr><td>{stats.total}戶</td><td>{stats.unsold}戶</td><td>{stats.handedOver}戶</td><td>{stats.movedIn}戶</td><td>{stats.rented}戶</td><td>{stats.noDeco}戶</td><td>{stats.deco}戶</td></tr></tbody>
+                            </table>
+
+                            <p style={{margin: '15px 0 5px 0'}}><strong>(二) 收支現況</strong> <span style={{fontSize: '12px', color: '#666'}}>(統計至 {finance.date})</span></p>
+                            <div style={{border: '1px solid #2c3e50', padding: '15px', borderTop: '4px solid #2c3e50', backgroundColor: '#fff'}}>
+                                {/* A. 存摺餘額 */}
+                                <table style={{width: '100%', marginBottom: '15px', borderCollapse: 'collapse'}}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{border: 'none', fontWeight: 'bold', color: '#2c3e50', fontSize: '15px'}}>A. 存摺餘額 (含暫收款裝潢保證金)</td>
+                                            <td style={{border: 'none', textAlign: 'right', fontFamily: 'monospace', fontSize: '18px', fontWeight: 'bold', color: '#2c3e50'}}>${finance.balance}</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                
+                                {/* B. 已付款項 */}
+                                <FinanceListPreview title="B. 本期已付款項" items={finance.items} calculateTotal={calculateTotal} />
+
+                                {/* C. 待付款項 */}
+                                <FinanceListPreview title="C. 本期待付款項" items={finance.pendingItems} calculateTotal={calculateTotal} />
+
+                                {/* D. 應收款項 */}
+                                <FinanceListPreview title="D. 本期管理費應收" items={finance.receivableItems} calculateTotal={calculateTotal} />
+                            </div>
+
+                            {/* 參 */}
+                            <div className="section-header">參、議題討論</div>
+                            {issues.map(issue => (
+                                <div key={issue.id} className="avoid-break" style={{border: '1px solid #ccc', marginBottom: '20px', backgroundColor: '#fff'}}>
+                                    <div className="issue-title-bar">{issue.title}</div>
+                                    <div style={{padding: '12px'}}>
+                                        <div style={{marginBottom: '15px', whiteSpace: 'pre-wrap', lineHeight: '1.6'}}>{issue.desc}</div>
+                                        <div style={{borderTop: '1px dashed #999', paddingTop: '10px', minHeight: '40px', backgroundColor: '#fff5f5', padding: '10px', marginTop: '10px'}}>
+                                            <span style={{fontWeight: 'bold', color: '#b91c1c', display: 'block', marginBottom: '5px'}}>決議：</span>
+                                            <div style={{whiteSpace: 'pre-wrap'}}>{issue.resolution || '照案通過'}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {/* 肆 */}
+                            <div className="section-header">肆、臨時動議</div>
+                            {tempMotions.length > 0 ? tempMotions.map((tm, index) => (
+                                <div key={tm.id} className="avoid-break" style={{border: '1px solid #ccc', marginBottom: '20px'}}>
+                                    <div style={{padding: '12px'}}>
+                                        <strong style={{color: '#2c3e50'}}>臨時動議{numberToChinese(index + 1)}：</strong>
+                                        <div style={{marginTop: '10px', borderBottom: '1px dashed #ccc', paddingBottom: '10px', marginBottom: '10px', whiteSpace: 'pre-wrap'}}>{tm.desc}</div>
+                                        <div>
+                                            <span style={{fontWeight: 'bold', color: '#b91c1c', display: 'block', marginBottom: '5px'}}>決議：</span>
+                                            <div style={{whiteSpace: 'pre-wrap'}}>{tm.resolution}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )) : (
+                                <p style={{marginLeft: '20px'}}>(無)</p>
+                            )}
+
+                            {/* 伍 */}
+                            <div className="section-header avoid-break">伍、散會</div>
+                            <div className="avoid-break" style={{marginTop: '40px'}}>
+                                <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                                    <tbody>
+                                        <tr>
+                                            <td style={{border: 'none', padding: '10px 0', width: '15%', fontWeight: 'bold'}}>主 席：</td>
+                                            <td style={{border: 'none', borderBottom: '1px solid #000', width: '30%'}}></td>
+                                            <td style={{border: 'none', width: '55%'}}></td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                                <div style={{textAlign: 'right', marginTop: '20px', fontSize: '14px'}}>
+                                    公告日期：{info.announcementDate}
+                                </div>
+                            </div>
+
+                            {/* 簽名欄區塊 (可選) */}
+                            {info.showSignatures && (
+                                <div className="avoid-break" style={{marginTop: '50px', paddingTop: '20px', borderTop: '2px solid #eee'}}>
+                                    <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                                        <tbody>
+                                            <tr>
+                                                <td style={{border: 'none', padding: '20px 0', width: '33%', textAlign: 'center'}}>
+                                                    <div style={{marginBottom: '40px', fontWeight: 'bold'}}>主席簽名</div>
+                                                    <div style={{borderBottom: '1px solid #000', width: '80%', margin: '0 auto'}}></div>
+                                                </td>
+                                                <td style={{border: 'none', padding: '20px 0', width: '33%', textAlign: 'center'}}>
+                                                    <div style={{marginBottom: '40px', fontWeight: 'bold'}}>紀錄人員</div>
+                                                    <div style={{borderBottom: '1px solid #000', width: '80%', margin: '0 auto'}}></div>
+                                                </td>
+                                                <td style={{border: 'none', padding: '20px 0', width: '33%', textAlign: 'center'}}>
+                                                    <div style={{marginBottom: '40px', fontWeight: 'bold'}}>出席委員</div>
+                                                    <div style={{borderBottom: '1px solid #000', width: '80%', margin: '0 auto'}}></div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                    
+                    {/* 清除確認視窗 */}
+                    {showClearModal && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 z-[60] flex items-center justify-center p-4">
+                            <div className="bg-white p-6 rounded-lg shadow-xl max-w-xs w-full">
+                                <h3 className="font-bold text-lg mb-2">確定重置？</h3>
+                                <p className="text-sm text-gray-600 mb-4">這會清空當前畫面。</p>
+                                <div className="flex justify-end gap-2">
+                                    <button onClick={() => setShowClearModal(false)} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300 text-sm font-bold">取消</button>
+                                    <button onClick={clearData} className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm font-bold">確定重置</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<MeetingAgendaGenerator />);
+    </script>
+</body>
+</html>
