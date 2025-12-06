@@ -5,66 +5,64 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>房產經紀人工作站</title>
     <style>
-        /* 全局設定：讓網頁看起來像圖片那樣乾淨 */
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #f0f2f5; /* 圖片中的淺灰色背景 */
+            background-color: #F7F9F6; /* 極淺的綠灰色背景 */
             margin: 0;
             padding: 0;
-            color: #333;
+            color: #4A5046; /* 深灰綠色文字，比純黑更柔和 */
         }
 
-        /* 頂部 Header：模仿圖片上方的圓弧感 */
         header {
             background-color: #ffffff;
             padding: 40px 20px 60px 20px;
             text-align: center;
             border-bottom-left-radius: 40px;
             border-bottom-right-radius: 40px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 20px rgba(116, 140, 112, 0.1); /* 帶點綠色的陰影 */
             margin-bottom: 30px;
         }
 
         h1 {
             font-size: 1.8rem;
             margin: 0;
-            color: #2c3e50;
+            color: #3C4A3A;
             letter-spacing: 1px;
         }
 
         p.subtitle {
-            color: #8898aa;
+            color: #8C9E88; /* 淺抹茶色副標題 */
             font-size: 0.9rem;
             margin-top: 10px;
         }
 
-        /* 容器：限制寬度，讓手機看剛好，電腦看也不會太寬 */
         .container {
             max-width: 600px;
             margin: 0 auto;
             padding: 0 20px 40px 20px;
         }
 
-        /* 卡片設計：模仿圖片中間的區塊 */
+        /* 卡片設計 */
         .card {
             background-color: white;
-            border-radius: 24px; /* 大圓角 */
+            border-radius: 24px;
             padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.05); /* 柔和的浮起陰影 */
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03);
             display: flex;
             align-items: center;
             justify-content: space-between;
-            transition: transform 0.2s ease;
-            text-decoration: none; /* 去除連結底線 */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            text-decoration: none;
             color: inherit;
+            border: 1px solid transparent;
         }
 
         .card:active {
-            transform: scale(0.98); /* 點擊時的小動畫 */
+            transform: scale(0.98);
+            background-color: #FAFCF9;
         }
 
-        /* 卡片左側的文字區 */
         .card-content {
             flex: 1;
         }
@@ -72,34 +70,35 @@
         .card-title {
             font-size: 1.2rem;
             font-weight: bold;
+            color: #3C4A3A;
             margin-bottom: 5px;
             display: block;
         }
 
         .card-desc {
             font-size: 0.85rem;
-            color: #8898aa;
+            color: #8C9E88;
         }
 
-        /* 卡片右側的圖示區 */
-        .card-icon {
-            width: 50px;
-            height: 50px;
-            background-color: #f0f2f5;
-            border-radius: 50%; /* 圓形背景 */
+        /* 抹茶綠按鈕/圖示區 */
+        .card-action {
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            background-color: #748C70; /* 這裡就是您要的抹茶綠 */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px; /* 膠囊狀按鈕，呼應圖片風格 */
+            font-size: 0.9rem;
+            font-weight: bold;
             margin-left: 15px;
+            transition: background-color 0.2s;
         }
-
-        /* 針對不同功能的配色微調 */
-        /* 房貸：藍色系 */
-        .icon-blue { background-color: #e3f2fd; color: #1976d2; }
         
-        /* 業績：綠色系 (圖片中的主色調) */
-        .icon-green { background-color: #e8f5e9; color: #2e7d32; }
+        /* 讓按鈕裡面看起來有點層次 */
+        .card:hover .card-action {
+            background-color: #5F745B; /* 滑鼠移過去變深一點的抹茶 */
+        }
 
     </style>
 </head>
@@ -107,7 +106,7 @@
 
     <header>
         <h1>Agent Tools</h1>
-        <p class="subtitle">房產經紀人 ‧ 隨身工作站</p>
+        <p class="subtitle">Personal Workspace</p>
     </header>
 
     <div class="container">
@@ -115,24 +114,24 @@
         <a href="loan.html" class="card">
             <div class="card-content">
                 <span class="card-title">房貸試算</span>
-                <span class="card-desc">計算月付金、總利息與寬限期</span>
+                <span class="card-desc">Loan Calculator</span>
             </div>
-            <div class="card-icon icon-blue">
-                🏠
+            <div class="card-action">
+                開啟
             </div>
         </a>
 
         <a href="salescalc.html" class="card">
             <div class="card-content">
                 <span class="card-title">業績計算機</span>
-                <span class="card-desc">預估佣金收入、達成率統計</span>
+                <span class="card-desc">Commission & Sales</span>
             </div>
-            <div class="card-icon icon-green">
-                💰
+            <div class="card-action">
+                開啟
             </div>
         </a>
 
-        </div>
+    </div>
 
 </body>
 </html>
