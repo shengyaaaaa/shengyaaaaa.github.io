@@ -211,10 +211,10 @@
                     </button>
                 </div>
 
-                <!-- 批量新增摺疊面板 -->
+                <!-- 批次新增摺疊面板 -->
                 <div class="mb-4">
                     <button onclick="toggleBatch('batchHousehold')" class="text-xs text-gray-500 flex items-center gap-1 hover:text-teal-600 transition-colors ml-1 mb-2">
-                        <i class="ph ph-caret-down"></i> 展開批量新增工具
+                        <i class="ph ph-caret-down"></i> 展開批次新增工具
                     </button>
                     <div id="batchHousehold" class="hidden bg-gray-100/50 rounded-xl p-4 border border-gray-200/50">
                         <div class="grid grid-cols-2 gap-3 mb-3">
@@ -223,7 +223,7 @@
                         </div>
                         <input type="text" id="units" placeholder="戶別 (例: A1, A2, A3)" class="neumorphic-pressed w-full p-2 text-sm mb-3">
                         <button onclick="batchAddHouseholds()" class="neumorphic-btn w-full text-sm py-2">
-                            <i class="ph ph-copy"></i> 批量生成
+                            <i class="ph ph-copy"></i> 批次生成
                         </button>
                     </div>
                 </div>
@@ -263,10 +263,10 @@
                     </button>
                 </div>
 
-                 <!-- 批量新增摺疊面板 -->
+                 <!-- 批次新增摺疊面板 -->
                  <div class="mb-4">
                     <button onclick="toggleBatch('batchSpot')" class="text-xs text-gray-500 flex items-center gap-1 hover:text-teal-600 transition-colors ml-1 mb-2">
-                        <i class="ph ph-caret-down"></i> 展開批量新增工具
+                        <i class="ph ph-caret-down"></i> 展開批次新增工具
                     </button>
                     <div id="batchSpot" class="hidden bg-gray-100/50 rounded-xl p-4 border border-gray-200/50">
                         <input type="text" id="spotPrefix" placeholder="前綴 (選填，例: B1-)" class="neumorphic-pressed w-full p-2 text-sm mb-3">
@@ -275,7 +275,7 @@
                             <input type="number" id="endSpot" placeholder="結束 (例:50)" class="neumorphic-pressed p-2 text-sm">
                         </div>
                         <button onclick="batchAddParkingSpots()" class="neumorphic-btn w-full text-sm py-2">
-                            <i class="ph ph-copy"></i> 批量生成
+                            <i class="ph ph-copy"></i> 批次生成
                         </button>
                     </div>
                 </div>
@@ -531,7 +531,7 @@
             const end = parseInt(document.getElementById('endFloor').value);
             const unitsStr = document.getElementById('units').value;
 
-            if (!start || !end || !unitsStr) return showToast('請填寫完整批量資訊', 'error');
+            if (!start || !end || !unitsStr) return showToast('請填寫完整批次資訊', 'error');
             if (start > end) return showToast('起始樓層不可大於結束樓層', 'error');
 
             const units = unitsStr.split(/[,，\s]+/).filter(u => u); // 支援逗號、空格分隔
@@ -560,7 +560,7 @@
             });
 
             saveState();
-            if (count > 0) showToast(`批量新增成功！共加入 ${count} 戶`);
+            if (count > 0) showToast(`批次新增成功！共加入 ${count} 戶`);
             else showToast('沒有新增任何住戶 (可能都已存在)', 'info');
             
             toggleBatch('batchHousehold'); // 關閉面板
@@ -613,7 +613,7 @@
             });
 
             saveState();
-            if (count > 0) showToast(`批量新增 ${count} 個車位`);
+            if (count > 0) showToast(`批次新增 ${count} 個車位`);
             toggleBatch('batchSpot');
         }
 
@@ -1050,4 +1050,5 @@
         
     </script>
 </body>
+
 </html>
