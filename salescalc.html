@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<title>超級業績計算機 2.2</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- html2canvas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<!-- Google Fonts -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+<!-- Phosphor Icons -->
+<script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['Noto Sans TC', 'sans-serif'],
+        },
+        colors: {
+          brand: {
+            50: '#fff7ed',
+            100: '#ffedd5',
+            500: '#f97316', // Orange-500
+            600: '#ea580c', // Orange-600
+            700: '#c2410c',
+            gradientStart: '#ff8c42',
+            gradientEnd: '#ff5f2e',
+          }
+        }
+      },
+    },
+  }
+</script>
+
+<style>
+    /* 自定義捲軸 */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1;
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* 漂浮標籤效果 */
+    .floating-input:placeholder-shown + label {
+        top: 50%;
+        transform: translateY(-50%);
+        font-size: 1rem;
+        color: #9ca3af;
+    }
+    .floating-input:not(:placeholder-shown) + label,
+    .floating-input:focus + label {
+        top: -0.6rem;
+        transform: translateY(0);
+        font-size: 0.8rem;
+        color: #ea580c;
+        background-color: white;
+        padding: 0 4px;
+    }
+
+    /* 隱藏數字輸入框的箭頭 */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+        -webkit-appearance: none; 
+        margin: 0; 
+    }
+    
+    /* 玻璃擬態背景 */
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+    }
+
+    /* 結果區塊的背景紋理 */
+    .result-pattern {
+        background-color: #fff7ed;
+        background-image: radial-gradient(#fdba74 0.5px, transparent 0.5px), radial-gradient(#fdba74 0.5px, #fff7ed 0.5px);
+        background-size: 20px 20px;
+        background-position: 0 0, 10px 10px;
+    }
+</style>
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased min-h-screen flex flex-col">
+
+<!-- 頂部導航 -->
+<nav class="bg-white shadow-sm sticky top-0 z-30 border-b border-slate-100">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex justify-between h-16 items-center">
+            <div class="flex items-center gap-2">
+                <div class="bg-gradient-to-br from-brand-gradientStart to-brand-gradientEnd text-white p-2 rounded-lg shadow-lg">
+                    <i class="ph ph-calculator text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800 tracking-tight">超級業績計算機</h1>
+                    <p class="text-xs text-slate-500 font-medium">Professional Commission Calculator</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                 <button onclick="window.location.reload()" class="p-2 text-slate-400 hover:text-brand-600 transition-colors" title="重新整理">
+                    <i class="ph ph-arrows-clockwise text-xl"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- 主要內容區 -->
+<main class="flex-grow p-4 md:p-6 lg:p-8 max-w-7xl mx-auto w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 h-full">
+        
+        <!-- 左側：輸入面板 -->
+        <div class="lg:col-span-7 space-y-6">
+            
+            <!-- 1. 案件基本資料卡片 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 relative overflow-hidden group hover:shadow-md transition-shadow duration-300">
+                <div class="absolute top-0 left-0 w-1 h-full bg-brand-500"></div>
+                <h2 class="text-lg font-bold text-slate-800 mb-5 flex items-center gap-2">
+                    <i class="ph-duotone ph-house-line text-brand-500 text-xl"></i> 案件詳情
+                </h2>
+                
+                <div class="space-y-5">
+                    <!-- 案件名稱 -->
+                    <div class="relative">
+                        <input type="text" id="caseName" class="floating-input block w-full px-4 py-3 text-slate-900 bg-transparent border-2 border-slate-200 rounded-xl appearance-none focus:outline-none focus:ring-0 focus:border-brand-500 peer transition-colors" placeholder=" " />
+                        <label for="caseName" class="absolute left-3 px-1 text-slate-500 duration-300 z-10 origin-[0]">案件名稱 / 地址</label>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <!-- 成交總價 -->
+                        <div class="relative">
+                            <input type="number" id="price" step="0.01" class="floating-input block w-full px-4 py-3 text-slate-900 bg-transparent border-2 border-slate-200 rounded-xl appearance-none focus:outline-none focus:ring-0 focus:border-brand-500 peer transition-colors" placeholder=" " />
+                            <label for="price" class="absolute left-3 px-1 text-slate-500 duration-300 z-10 origin-[0]">成交總價 (萬元)</label>
+                            <span class="absolute right-4 top-3.5 text-slate-400 text-sm pointer-events-none">萬元</span>
+                        </div>
+                        
+                        <!-- 約別選擇 -->
+                        <div class="relative">
+                            <select id="contractType" class="block w-full px-4 py-3 text-slate-900 bg-transparent border-2 border-slate-200 rounded-xl appearance-none focus:outline-none focus:ring-0 focus:border-brand-500 transition-colors cursor-pointer">
+                                <option value="exclusive">專任約 (開發 55% / 銷售 45%)</option>
+                                <option value="general">一般約 (開發 50% / 銷售 50%)</option>
+                            </select>
+                            <div class="absolute right-4 top-3.5 pointer-events-none text-slate-500">
+                                <i class="ph-bold ph-caret-down"></i>
+                            </div>
+                            <label class="absolute -top-2.5 left-3 px-1 bg-white text-xs text-brand-600">合約類型</label>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2">
+                        <!-- 賣方服務費 -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <p class="text-xs font-bold text-slate-500 uppercase mb-2">賣方服務費 (收)</p>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-slate-400 font-bold">$</span>
+                                <input id="sellerFee" type="number" step="0.01" placeholder="0.00" class="w-full bg-transparent border-b-2 border-slate-300 focus:border-brand-500 focus:outline-none text-xl font-bold text-slate-700 py-1">
+                            </div>
+                            
+                            <!-- 賣方介紹費開關 -->
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-200/60">
+                                <label class="flex items-center cursor-pointer gap-2 text-sm text-slate-600 select-none">
+                                    <input type="checkbox" id="hasSellerIntro" class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500 border-gray-300">
+                                    <span>介紹人</span>
+                                </label>
+                                <div class="flex items-center gap-1 opacity-50 transition-opacity" id="sellerIntroGroup">
+                                    <input id="sellerIntroRate" type="number" value="10" class="w-12 text-center border border-slate-300 rounded text-sm py-1 focus:border-brand-500 focus:outline-none" disabled>
+                                    <span class="text-sm text-slate-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 買方服務費 -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <p class="text-xs font-bold text-slate-500 uppercase mb-2">買方服務費 (收)</p>
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="text-slate-400 font-bold">$</span>
+                                <input id="buyerFee" type="number" step="0.01" placeholder="0.00" class="w-full bg-transparent border-b-2 border-slate-300 focus:border-brand-500 focus:outline-none text-xl font-bold text-slate-700 py-1">
+                            </div>
+                            
+                            <!-- 買方介紹費開關 -->
+                            <div class="flex items-center justify-between mt-3 pt-3 border-t border-slate-200/60">
+                                <label class="flex items-center cursor-pointer gap-2 text-sm text-slate-600 select-none">
+                                    <input type="checkbox" id="hasBuyerIntro" class="w-4 h-4 text-brand-600 rounded focus:ring-brand-500 border-gray-300">
+                                    <span>介紹人</span>
+                                </label>
+                                <div class="flex items-center gap-1 opacity-50 transition-opacity" id="buyerIntroGroup">
+                                    <input id="buyerIntroRate" type="number" value="10" class="w-12 text-center border border-slate-300 rounded text-sm py-1 focus:border-brand-500 focus:outline-none" disabled>
+                                    <span class="text-sm text-slate-500">%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 人員分配卡片 -->
+            <div class="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 relative hover:shadow-md transition-shadow duration-300">
+                <div class="absolute top-0 left-0 w-1 h-full bg-blue-500"></div>
+                
+                <div class="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
+                    <h2 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                        <i class="ph-duotone ph-users-three text-blue-500 text-xl"></i> 業績分配
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="window.clearInputs()" class="px-3 py-1.5 text-xs font-medium text-slate-500 bg-slate-100 rounded-lg hover:bg-slate-200 hover:text-red-600 transition-colors flex items-center gap-1">
+                            <i class="ph-bold ph-trash"></i> 清除重填
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 開發人員 -->
+                <div class="mb-8">
+                    <div class="flex justify-between items-end mb-3">
+                        <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wider">開發人員 (Dev)</h3>
+                        <span id="devTotalDisplay" class="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700 transition-colors">目前合計: 100%</span>
+                    </div>
+                    
+                    <!-- 進度條 -->
+                    <div class="w-full h-1.5 bg-slate-100 rounded-full mb-3 overflow-hidden">
+                        <div id="devProgressBar" class="h-full bg-green-500 transition-all duration-500" style="width: 100%"></div>
+                    </div>
+
+                    <div class="space-y-3" id="devList">
+                        <!-- 動態生成 -->
+                    </div>
+                    
+                    <button onclick="window.addRow('dev')" class="mt-3 w-full py-2 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all text-sm font-bold flex items-center justify-center gap-2 group">
+                        <i class="ph-bold ph-plus-circle group-hover:scale-110 transition-transform"></i> 新增開發人員
+                    </button>
+                </div>
+
+                <!-- 銷售人員 -->
+                <div>
+                    <div class="flex justify-between items-end mb-3">
+                        <h3 class="text-sm font-bold text-slate-600 uppercase tracking-wider">銷售人員 (Sales)</h3>
+                        <span id="salesTotalDisplay" class="text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700 transition-colors">目前合計: 100%</span>
+                    </div>
+
+                     <!-- 進度條 -->
+                     <div class="w-full h-1.5 bg-slate-100 rounded-full mb-3 overflow-hidden">
+                        <div id="salesProgressBar" class="h-full bg-green-500 transition-all duration-500" style="width: 100%"></div>
+                    </div>
+
+                    <div class="space-y-3" id="salesList">
+                        <!-- 動態生成 -->
+                    </div>
+
+                    <button onclick="window.addRow('sales')" class="mt-3 w-full py-2 border-2 border-dashed border-slate-200 text-slate-400 rounded-xl hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-all text-sm font-bold flex items-center justify-center gap-2 group">
+                        <i class="ph-bold ph-plus-circle group-hover:scale-110 transition-transform"></i> 新增銷售人員
+                    </button>
+                </div>
+            </div>
+
+            <!-- 計算按鈕 (大顆) -->
+            <button onclick="window.calculate()" class="w-full bg-gradient-to-r from-brand-gradientStart to-brand-gradientEnd hover:from-brand-600 hover:to-brand-700 text-white text-lg font-bold py-4 rounded-2xl shadow-lg shadow-brand-500/30 transform transition hover:-translate-y-1 active:translate-y-0 flex items-center justify-center gap-3">
+                <i class="ph-bold ph-calculator"></i>
+                開始計算分配結果
+            </button>
+
+        </div>
+        
+        <!-- 右側：結果面板 -->
+        <div class="lg:col-span-5 h-full">
+            <div class="lg:sticky lg:top-24 h-full flex flex-col">
+                
+                <!-- 結果容器 -->
+                <div id="resultPanel" class="bg-white rounded-2xl shadow-xl border border-brand-100/50 overflow-hidden flex flex-col h-full relative">
+                    
+                    <!-- 預設空狀態 -->
+                    <div id="emptyState" class="flex flex-col items-center justify-center py-20 px-6 text-center flex-grow h-full min-h-[400px]">
+                        <div class="w-24 h-24 bg-brand-50 rounded-full flex items-center justify-center mb-6 animate-pulse">
+                            <i class="ph-duotone ph-receipt text-4xl text-brand-300"></i>
+                        </div>
+                        <h3 class="text-xl font-bold text-slate-700 mb-2">準備計算</h3>
+                        <p class="text-slate-400 text-sm max-w-xs mx-auto">請在左側填寫案件金額與人員分配，按下計算後即可生成精美報表。</p>
+                    </div>
+
+                    <!-- 計算結果 (預設隱藏) -->
+                    <div id="reportContainer" class="hidden flex-col h-full">
+                        <!-- 可滾動的內容區域 -->
+                        <div class="overflow-y-auto p-6 custom-scrollbar result-pattern flex-grow" id="reportContent">
+                            <!-- 這裡的內容會被 JS 動態替換 -->
+                        </div>
+                        
+                        <!-- 底部操作列 -->
+                        <div class="p-4 bg-white border-t border-slate-100 flex gap-3">
+                            <button onclick="window.exportImage()" class="flex-1 bg-slate-800 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-slate-900 transition-all flex items-center justify-center gap-2">
+                                <i class="ph-bold ph-download-simple"></i> 下載圖片
+                            </button>
+                             <button onclick="window.clearInputs()" class="px-4 py-3 text-slate-500 hover:bg-slate-100 rounded-xl font-bold transition-colors" title="重置">
+                                <i class="ph-bold ph-arrow-counter-clockwise"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script>
+/**
+ * Gemini 3 優化邏輯：
+ * 1. 使用 Data-Driven 方式管理人員列表
+ * 2. 即時監聽輸入變化更新 UI 狀態
+ * 3. Intl.NumberFormat 處理貨幣顯示
+ */
+
+// 狀態管理
+const state = {
+    dev: [{id: 1, name: '', ratio: 100}],
+    sales: [{id: 1, name: '', ratio: 100}],
+    nextId: 2
+};
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+    renderRows('dev');
+    renderRows('sales');
+    setupEventListeners();
+});
+
+function setupEventListeners() {
+    // 介紹費 Checkbox 連動
+    ['hasSellerIntro', 'hasBuyerIntro'].forEach(id => {
+        const checkbox = document.getElementById(id);
+        const targetId = id === 'hasSellerIntro' ? 'sellerIntroRate' : 'buyerIntroRate';
+        const group = document.getElementById(id === 'hasSellerIntro' ? 'sellerIntroGroup' : 'buyerIntroGroup');
+        const input = document.getElementById(targetId);
+
+        checkbox.addEventListener('change', (e) => {
+            if(e.target.checked) {
+                group.classList.remove('opacity-50');
+                input.disabled = false;
+            } else {
+                group.classList.add('opacity-50');
+                input.disabled = true;
+            }
+        });
+    });
+}
+
+// 渲染人員列表
+window.renderRows = function(type) {
+    const container = document.getElementById(`${type}List`);
+    const list = state[type];
+    
+    container.innerHTML = list.map((person, index) => `
+        <div class="flex items-center gap-3 animate-[fadeIn_0.3s_ease-out]">
+            <div class="flex-grow relative">
+                <input type="text" 
+                    value="${person.name}" 
+                    oninput="updatePerson('${type}', ${person.id}, 'name', this.value)"
+                    placeholder="${type === 'dev' ? '開發人員' : '銷售人員'}姓名"
+                    class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:border-brand-500 focus:outline-none transition-colors"
+                >
+            </div>
+            <div class="w-24 relative flex items-center">
+                <input type="number" 
+                    value="${person.ratio}" 
+                    oninput="updatePerson('${type}', ${person.id}, 'ratio', this.value)"
+                    class="w-full px-3 py-2 pr-6 bg-slate-50 border border-slate-200 rounded-lg text-sm text-right font-mono focus:border-brand-500 focus:outline-none transition-colors"
+                >
+                <span class="absolute right-2 text-slate-400 text-xs">%</span>
+            </div>
+            <button onclick="removePerson('${type}', ${person.id})" 
+                class="text-slate-300 hover:text-red-500 transition-colors p-1 rounded-md hover:bg-red-50"
+                ${list.length === 1 ? 'disabled style="opacity:0; pointer-events:none;"' : ''}>
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+    `).join('');
+
+    checkTotal(type);
+}
+
+window.addRow = function(type) {
+    state[type].push({ id: state.nextId++, name: '', ratio: 0 });
+    renderRows(type);
+}
+
+window.removePerson = function(type, id) {
+    if(state[type].length <= 1) return;
+    state[type] = state[type].filter(p => p.id !== id);
+    renderRows(type);
+}
+
+window.updatePerson = function(type, id, field, value) {
+    const person = state[type].find(p => p.id === id);
+    if(person) {
+        person[field] = field === 'ratio' ? parseFloat(value) || 0 : value;
+        if(field === 'ratio') checkTotal(type);
+    }
+}
+
+// 檢查總和並更新 UI
+function checkTotal(type) {
+    const total = state[type].reduce((sum, p) => sum + (p.ratio || 0), 0);
+    const display = document.getElementById(`${type}TotalDisplay`);
+    const bar = document.getElementById(`${type}ProgressBar`);
+    
+    // 誤差容許值
+    const isValid = Math.abs(total - 100) < 0.01;
+    
+    display.textContent = `合計: ${parseFloat(total.toFixed(2))}%`;
+    bar.style.width = `${Math.min(total, 100)}%`;
+    
+    if(isValid) {
+        display.className = "text-xs font-bold px-2 py-1 rounded bg-green-100 text-green-700 transition-colors";
+        bar.className = "h-full bg-green-500 transition-all duration-300";
+    } else if (total > 100) {
+        display.className = "text-xs font-bold px-2 py-1 rounded bg-red-100 text-red-700 transition-colors";
+        bar.className = "h-full bg-red-500 transition-all duration-300";
+    } else {
+        display.className = "text-xs font-bold px-2 py-1 rounded bg-orange-100 text-orange-700 transition-colors";
+        bar.className = "h-full bg-orange-400 transition-all duration-300";
+    }
+    
+    return isValid;
+}
+
+window.clearInputs = function() {
+    document.getElementById('caseName').value = '';
+    document.getElementById('price').value = '';
+    document.getElementById('sellerFee').value = '';
+    document.getElementById('buyerFee').value = '';
+    document.getElementById('contractType').value = 'exclusive';
+    
+    document.getElementById('hasSellerIntro').checked = false;
+    document.getElementById('hasSellerIntro').dispatchEvent(new Event('change'));
+    document.getElementById('sellerIntroRate').value = 10;
+
+    document.getElementById('hasBuyerIntro').checked = false;
+    document.getElementById('hasBuyerIntro').dispatchEvent(new Event('change'));
+    document.getElementById('buyerIntroRate').value = 10;
+
+    state.dev = [{id: 1, name: '', ratio: 100}];
+    state.sales = [{id: 1, name: '', ratio: 100}];
+    state.nextId = 2;
+    
+    renderRows('dev');
+    renderRows('sales');
+
+    // 回到空狀態
+    document.getElementById('emptyState').classList.remove('hidden');
+    document.getElementById('reportContainer').classList.add('hidden');
+    document.getElementById('reportContainer').classList.remove('flex');
+}
+
+// 格式化貨幣 - 修改預設為 3 位小數
+const moneyFmt = (num, digits = 3) => new Intl.NumberFormat('zh-TW', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(num);
+
+// 核心計算
+window.calculate = function() {
+    // 驗證
+    const isDevValid = checkTotal('dev');
+    const isSalesValid = checkTotal('sales');
+    
+    if(!isDevValid || !isSalesValid) {
+        alert("請確保開發與銷售人員的佔比總和皆為 100%！");
+        return;
+    }
+
+    // 取值
+    const caseName = document.getElementById('caseName').value.trim() || '未命名案件';
+    const price = parseFloat(document.getElementById('price').value) || 0;
+    const sellerFee = parseFloat(document.getElementById('sellerFee').value) || 0;
+    const buyerFee = parseFloat(document.getElementById('buyerFee').value) || 0;
+    
+    const hasSellerIntro = document.getElementById('hasSellerIntro').checked;
+    const hasBuyerIntro = document.getElementById('hasBuyerIntro').checked;
+    const sellerIntroRate = hasSellerIntro ? (parseFloat(document.getElementById('sellerIntroRate').value) || 0) : 0;
+    const buyerIntroRate = hasBuyerIntro ? (parseFloat(document.getElementById('buyerIntroRate').value) || 0) : 0;
+    
+    const contractType = document.getElementById('contractType').value;
+    const devPoolRate = contractType === 'exclusive' ? 55 : 50;
+    const salesPoolRate = 100 - devPoolRate;
+
+    // 計算邏輯
+    const actualTotalCommission = sellerFee + buyerFee;
+    const actualRate = price > 0 ? (actualTotalCommission / price) * 100 : 0;
+    
+    // 介紹費
+    const sellerIntroAmt = sellerFee * sellerIntroRate / 100;
+    const buyerIntroAmt = buyerFee * buyerIntroRate / 100;
+    
+    // 業績池分配
+    // 規則更新：賣方介紹費從【開發】扣除，買方介紹費從【銷售】扣除
+    
+    // 1. 賣方服務費分配 (扣除賣方介紹費 -> 開發池)
+    const s_dev_gross = sellerFee * devPoolRate / 100;
+    const s_sales_gross = sellerFee * salesPoolRate / 100;
+    const s_dev_net = s_dev_gross - sellerIntroAmt; // 這裡扣除賣方介紹費
+    const s_sales_net = s_sales_gross;
+
+    // 2. 買方服務費分配 (扣除買方介紹費 -> 銷售池)
+    const b_dev_gross = buyerFee * devPoolRate / 100;
+    const b_sales_gross = buyerFee * salesPoolRate / 100;
+    const b_dev_net = b_dev_gross;
+    const b_sales_net = b_sales_gross - buyerIntroAmt; // 這裡扣除買方介紹費
+
+    // 總淨業績池
+    const totalDevPool = s_dev_net + b_dev_net;
+    const totalSalesPool = s_sales_net + b_sales_net;
+
+    // === 彙總個人業績 (合併同名人員) ===
+    const ledger = {};
+
+    // 處理開發
+    state.dev.forEach(p => {
+        if(!p.name) return;
+        const name = p.name.trim();
+        const amt = totalDevPool * p.ratio / 100;
+        
+        if(!ledger[name]) ledger[name] = { name: name, devAmt: 0, salesAmt: 0, devRatio: 0, salesRatio: 0 };
+        ledger[name].devAmt += amt;
+        ledger[name].devRatio += p.ratio; // 註：若同名出現兩次開發，ratio會疊加
+    });
+
+    // 處理銷售
+    state.sales.forEach(p => {
+        if(!p.name) return;
+        const name = p.name.trim();
+        const amt = totalSalesPool * p.ratio / 100;
+        
+        if(!ledger[name]) ledger[name] = { name: name, devAmt: 0, salesAmt: 0, devRatio: 0, salesRatio: 0 };
+        ledger[name].salesAmt += amt;
+        ledger[name].salesRatio += p.ratio;
+    });
+
+    // 轉為陣列並排序 (依總金額由高到低)
+    const sortedLedger = Object.values(ledger).sort((a, b) => {
+        const totalA = a.devAmt + a.salesAmt;
+        const totalB = b.devAmt + b.salesAmt;
+        return totalB - totalA;
+    });
+
+    // 生成結果 HTML
+    const reportHtml = `
+        <div class="space-y-6">
+            <!-- 1. 頭部總結 -->
+            <div class="text-center border-b-2 border-dashed border-slate-200 pb-6">
+                <h2 class="text-2xl font-bold text-slate-800 mb-1">${caseName}</h2>
+                <div class="text-xs text-slate-400 uppercase tracking-wider">業績計算報表</div>
+                <div class="mt-4 bg-slate-800 text-white rounded-xl p-4 shadow-lg transform scale-105">
+                    <div class="text-sm opacity-80 mb-1">總實收佣金</div>
+                    <div class="text-3xl font-bold font-mono text-brand-400">$${moneyFmt(actualTotalCommission, 2)}</div>
+                    <div class="text-xs mt-2 pt-2 border-t border-slate-600/50 flex justify-between px-4">
+                        <span>收費比: ${actualRate.toFixed(2)}%</span>
+                        <span>成交: ${moneyFmt(price, 0)}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 業績池概況 -->
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-brand-50 p-3 rounded-xl border border-brand-100">
+                    <div class="text-xs text-brand-600 font-bold uppercase mb-1">淨開發業績池</div>
+                    <div class="text-xl font-bold text-slate-800">$${moneyFmt(totalDevPool)}</div>
+                    <div class="text-xs text-slate-400 mt-1">已扣除賣方介紹費: $${moneyFmt(sellerIntroAmt)}</div>
+                </div>
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-100">
+                    <div class="text-xs text-blue-600 font-bold uppercase mb-1">淨銷售業績池</div>
+                    <div class="text-xl font-bold text-slate-800">$${moneyFmt(totalSalesPool)}</div>
+                    <div class="text-xs text-slate-400 mt-1">已扣除買方介紹費: $${moneyFmt(buyerIntroAmt)}</div>
+                </div>
+            </div>
+
+            <!-- 3. 個人業績排名 (合併後) -->
+            <div class="space-y-4">
+                <h3 class="text-sm font-bold text-slate-500 border-l-4 border-brand-500 pl-2">業績分配排行 (保留小數點後三位)</h3>
+                
+                <div class="divide-y divide-slate-100">
+                    ${generateAggregatedRows(sortedLedger)}
+                </div>
+            </div>
+
+            <!-- 4. Footer -->
+            <div class="pt-6 mt-6 border-t border-slate-100 text-center">
+                <p class="text-xs text-slate-300">牙隹牙隹牙隹</p>
+            </div>
+        </div>
+    `;
+
+    // 顯示結果
+    const reportContent = document.getElementById('reportContent');
+    reportContent.innerHTML = reportHtml;
+    
+    document.getElementById('emptyState').classList.add('hidden');
+    const reportContainer = document.getElementById('reportContainer');
+    reportContainer.classList.remove('hidden');
+    reportContainer.classList.add('flex');
+    
+    // 手機版自動捲動到結果
+    if(window.innerWidth < 1024) {
+        document.getElementById('resultPanel').scrollIntoView({behavior: 'smooth'});
+    }
+}
+
+// 新增：生成合併後的人員列表
+function generateAggregatedRows(list) {
+    return list.map((p, index) => {
+        const total = p.devAmt + p.salesAmt;
+        const rankColor = index === 0 ? 'text-yellow-500' : (index === 1 ? 'text-gray-400' : (index === 2 ? 'text-orange-400' : 'text-slate-300'));
+        const rankIcon = index < 3 ? '<i class="ph-fill ph-crown text-lg"></i>' : `<span class="text-sm font-mono font-bold w-5 text-center">${index + 1}</span>`;
+        
+        // 構建標籤 HTML
+        let badges = '';
+        let details = [];
+        if (p.devRatio > 0) {
+            badges += `<span class="text-[10px] px-1.5 py-0.5 rounded bg-orange-100 text-orange-700 ring-1 ring-inset ring-black/5 whitespace-nowrap">開發 ${p.devRatio}%</span> `;
+            details.push(`開:$${moneyFmt(p.devAmt)}`);
+        }
+        if (p.salesRatio > 0) {
+            badges += `<span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 ring-1 ring-inset ring-black/5 whitespace-nowrap">銷售 ${p.salesRatio}%</span>`;
+            details.push(`銷:$${moneyFmt(p.salesAmt)}`);
+        }
+
+        const detailText = details.join(' | ');
+
+        return `
+        <div class="py-4 flex justify-between items-center group hover:bg-slate-50 rounded-lg px-2 transition-colors border-b border-slate-50 last:border-0">
+            <div class="flex items-center gap-3 flex-grow overflow-hidden">
+                <!-- 排名 -->
+                <div class="${rankColor} flex-shrink-0 w-6 flex justify-center">
+                    ${rankIcon}
+                </div>
+                
+                <!-- 姓名與 Avatar -->
+                <div class="w-10 h-10 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-bold flex-shrink-0 border border-slate-200">
+                    ${p.name.charAt(0)}
+                </div>
+                
+                <div class="flex flex-col min-w-0">
+                    <div class="font-bold text-slate-700 text-base truncate">${p.name}</div>
+                    <div class="flex gap-1 flex-wrap mt-0.5">
+                        ${badges}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="text-right flex-shrink-0 ml-3">
+                <div class="font-bold text-slate-800 text-lg">$${moneyFmt(total)}</div>
+                <div class="text-[10px] text-slate-400 font-medium mt-0.5">${detailText}</div>
+            </div>
+        </div>
+        `;
+    }).join('');
+}
+
+// 匯出圖片
+window.exportImage = function() {
+    const element = document.getElementById('reportContent');
+    
+    // 為了截圖美觀，暫時調整樣式
+    const originalBg = element.style.background;
+    element.style.background = 'white';
+    
+    html2canvas(element, {
+        scale: 2, // Retina 清晰度
+        backgroundColor: '#ffffff',
+        useCORS: true,
+        onclone: (clonedDoc) => {
+            // 針對截圖時的特殊處理：強制展開所有文字寬度
+            const allTexts = clonedDoc.querySelectorAll('*');
+            allTexts.forEach(el => {
+                el.style.fontFamily = "'Noto Sans TC', sans-serif";
+            });
+        }
+    }).then(canvas => {
+        element.style.background = originalBg; // 恢復樣式
+        
+        const link = document.createElement('a');
+        const name = document.getElementById('caseName').value.trim() || '業績報表';
+        link.download = `${name}_業績報表.png`;
+        link.href = canvas.toDataURL();
+        link.click();
+    });
+}
+</script>
+
+</body>
+</html>
