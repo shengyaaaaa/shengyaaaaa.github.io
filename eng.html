@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Learning Studio (Shrimp Powered)</title>
+    <title>English Learning Studio (AI Powered)</title>
     
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
@@ -53,83 +53,56 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- CRITICAL PRINT FIXES (V2) --- */
+        /* --- ULTIMATE PRINT FIXES --- */
         @media print {
-            @page {
-                margin: 0;
-                size: A4;
-            }
+            @page { margin: 1cm; size: A4; }
             
+            /* Reset everything */
             html, body {
+                background: white !important;
+                color: black !important;
                 height: auto !important;
-                min-height: 100% !important;
                 overflow: visible !important;
-                background-color: white !important;
-                -webkit-print-color-adjust: exact;
-                print-color-adjust: exact;
                 margin: 0 !important;
                 padding: 0 !important;
             }
 
-            /* Hide everything by default */
-            body * {
-                visibility: hidden;
+            /* Hide the app UI */
+            #root > div > header, 
+            #root > div > main > section, 
+            .no-print {
+                display: none !important;
             }
 
-            /* Unhide the app container but keep strict control */
-            #root {
-                visibility: visible; 
-                position: static !important; /* KEY FIX: Removed absolute */
+            /* Force the print area to be the ONLY thing visible and flow naturally */
+            #print-area {
+                display: block !important;
+                position: relative !important; /* Changed from absolute/fixed */
                 width: 100% !important;
                 height: auto !important;
                 overflow: visible !important;
-            }
-
-            /* Explicitly hide UI elements */
-            header, section, .no-print, button, input, select, .shadow-neumorph { 
-                display: none !important; 
-            }
-            
-            /* Target the paper specifically */
-            #print-area, #print-area * {
-                visibility: visible;
-            }
-
-            #print-area {
-                position: relative !important; /* KEY FIX: Changed from absolute to relative */
+                background: white !important;
+                color: black !important;
+                box-shadow: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 left: auto !important;
                 top: auto !important;
-                width: 100% !important;
-                max-width: 100% !important;
-                margin: 0 !important;
-                padding: 1.5cm 2cm !important;
-                box-shadow: none !important;
-                background-color: white !important;
-                color: black !important;
-                overflow: visible !important;
-                display: block !important;
-                height: auto !important; /* KEY FIX */
-            }
-            
-            /* Pagination control */
-            .break-inside-avoid {
-                page-break-inside: avoid;
-                break-inside: avoid;
             }
 
-            /* Ensure text contrast in print */
-            .text-accent { color: #000000 !important; text-decoration: underline; }
-            .bg-highlight { background-color: #f9f9f9 !important; border: 1px solid #ddd !important; }
+            /* Ensure text wraps and breaks correctly */
+            p, h1, h2, h3, li {
+                page-break-inside: auto;
+                color: black !important;
+            }
             
-            /* Remove main container constraints */
-            main {
-                display: block !important;
-                width: 100% !important;
-                margin: 0 !important;
-                padding: 0 !important;
-                position: static !important;
-                height: auto !important; /* KEY FIX */
-                overflow: visible !important; /* KEY FIX */
+            /* Specific text styling for print readability */
+            .text-accent { color: #000 !important; font-weight: bold !important; text-decoration: none !important; }
+            .bg-highlight { border: 1px solid #ccc !important; background-color: #f8f8f8 !important; }
+            
+            /* Avoid breaking inside vocabulary items */
+            .break-inside-avoid {
+                page-break-inside: avoid;
             }
         }
     </style>
@@ -140,7 +113,7 @@
     <script type="text/babel">
         const { useState, useEffect, useRef } = React;
 
-        // --- Icons (Inline SVGs to avoid dependencies) ---
+        // --- Icons ---
         const Icons = {
             Coffee: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" x2="6" y1="2" y2="4"/><line x1="10" x2="10" y1="2" y2="4"/><line x1="14" x2="14" y1="2" y2="4"/></svg>,
             Music: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
@@ -151,6 +124,7 @@
             Sparkles: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></svg>,
             Sun: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
             Printer: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/></svg>,
+            FileText: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>,
             Feather: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" x2="2" y1="8" y2="22"/><line x1="17.5" x2="9" y1="15" y2="15"/></svg>,
             Key: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>
         };
@@ -161,7 +135,6 @@
             const [loading, setLoading] = useState(false);
             const [material, setMaterial] = useState(null);
             const [error, setError] = useState('');
-            // HARDCODED API KEY FOR PORTABILITY
             const [userApiKey, setUserApiKey] = useState('AIzaSyDnY3QgCrJqUNZ8sa8q6U9pMkyBvi2TeL4');
             const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
@@ -220,11 +193,81 @@
                     return <span key={index}>{part}</span>;
                 });
             };
+
+            const exportToWord = () => {
+                if (!material) return;
+
+                const header = `<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>${material.title}</title>
+                <style>
+                    body { font-family: 'Times New Roman', serif; }
+                    h1 { font-size: 24pt; color: #2C241F; font-weight: bold; }
+                    h2 { font-size: 18pt; color: #D98E56; border-bottom: 2px solid #D98E56; padding-bottom: 5px; margin-top: 20px; }
+                    h3 { font-size: 14pt; color: #2C241F; font-weight: bold; margin-top: 15px; }
+                    p { font-size: 12pt; line-height: 1.5; color: #000000; text-align: justify; }
+                    .vocab-item { margin-bottom: 20px; border-left: 3px solid #D98E56; padding-left: 10px; }
+                    .highlight { background-color: #FFF8F0; padding: 10px; margin-bottom: 10px; border: 1px solid #ddd; }
+                    .bold-accent { color: #D98E56; font-weight: bold; }
+                    .info-bar { font-size: 10pt; color: #666; margin-bottom: 5px; }
+                </style>
+                </head><body>`;
+
+                let content = `
+                    <h1>${material.title}</h1>
+                    <p style="color: #666;">Theme: ${material.theme} | Level: ${material.difficulty}</p>
+                    <hr/>
+                    
+                    <h2>1. Reading Article</h2>
+                    ${material.article.split('\n').map(p => `<p>${p.replace(/<b>(.*?)<\/b>/g, '<span class="bold-accent">$1</span>')}</p>`).join('')}
+                    
+                    <h2>2. Detailed Vocabulary</h2>
+                `;
+
+                material.vocabulary.forEach((v, idx) => {
+                    content += `
+                        <div class="vocab-item">
+                            <h3>${idx + 1}. ${v.word} <span style="font-size: 12pt; font-weight: normal; font-style: italic;">(${v.pos})</span> ${v.chinese}</h3>
+                            <p class="info-bar">IPA: /${v.ipa}/ | Phonics: ${v.phonics.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}</p>
+                            <p><b>Eng Def:</b> ${v.englishDef}</p>
+                            <div class="highlight">
+                                <p><b>★ 中文秒懂:</b> ${v.instantUnd}</p>
+                            </div>
+                            <p><b>● Collocations:</b> ${v.collocations}</p>
+                            <p><b>Examples:</b></p>
+                            <ul>
+                                ${v.sentences.map(s => `<li>${s.en.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')} <br/><span style="color:#666; font-size:10pt;">${s.ch}</span></li>`).join('')}
+                            </ul>
+                        </div>
+                    `;
+                });
+
+                if (material.grammar) {
+                    content += `<h2>3. Grammar Focus</h2>`;
+                    material.grammar.forEach(g => {
+                        content += `
+                            <div class="highlight">
+                                <h3>${g.point}</h3>
+                                <p>${g.explanation.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}</p>
+                                <p style="font-style: italic; color: #556943;">"${g.example.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}"</p>
+                            </div>
+                        `;
+                    });
+                }
+
+                const footer = `</body></html>`;
+                const sourceHTML = header + content + footer;
+
+                const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+                const fileDownload = document.createElement("a");
+                document.body.appendChild(fileDownload);
+                fileDownload.href = source;
+                fileDownload.download = `${material.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.doc`;
+                fileDownload.click();
+                document.body.removeChild(fileDownload);
+            };
         
             const generateMaterial = async () => {
                 if (!topic) return;
                 
-                // Safety check
                 if (!userApiKey) {
                     setShowApiKeyInput(true);
                     return;
@@ -316,7 +359,6 @@
                             }
                         );
 
-                        // If service is unavailable (503), retry
                         if (response.status === 503 && retries > 0) {
                             console.warn(`Model overloaded (503). Retrying in ${delay}ms...`);
                             await new Promise(resolve => setTimeout(resolve, delay));
@@ -330,8 +372,7 @@
 
                         return await response.json();
                     } catch (err) {
-                        // If it's a fetch error (like network issue) and we still have retries
-                        if (retries > 0 && err.name !== 'Error') { // Distinguish between API errors we threw vs network errors
+                        if (retries > 0 && err.name !== 'Error') {
                              console.warn(`Network error. Retrying in ${delay}ms...`, err);
                              await new Promise(resolve => setTimeout(resolve, delay));
                              return fetchWithRetry(retries - 1, delay * 2);
@@ -369,7 +410,7 @@
                                 </div>
                                 <div>
                                     <h1 className="text-2xl font-bold tracking-wide text-[#433831]">English Studio</h1>
-                                    <p className="text-xs text-[#8A7E72] font-medium tracking-wider uppercase">SHRIMP Powered Learning</p>
+                                    <p className="text-xs text-[#8A7E72] font-medium tracking-wider uppercase">LOBSTER Powered Learning</p>
                                 </div>
                             </div>
                             <div className="flex gap-4 items-center">
@@ -389,7 +430,7 @@
         
                     <main className="max-w-5xl mx-auto p-4 md:p-8">
 
-                        {/* API Key Input Section (Collapsible - hidden by default since hardcoded) */}
+                        {/* API Key Input Section */}
                         {showApiKeyInput && (
                             <div className="mb-8 rounded-3xl p-6 bg-[#E8E4DE] shadow-neumorph-inset no-print border border-[#D98E56]/20">
                                 <div className="flex flex-col gap-2">
@@ -512,8 +553,8 @@
                             <div className="animate-fade-in-up">
                                 
                                 {/* Toolbar */}
-                                <div className="flex justify-between items-center mb-6 px-2 no-print">
-                                    <div className="text-sm text-[#8A7E72] font-medium flex items-center gap-2">
+                                <div className="flex justify-end items-center mb-6 px-2 no-print gap-3">
+                                    <div className="text-sm text-[#8A7E72] font-medium flex items-center gap-2 mr-auto">
                                         <Icons.Sun className="w-4 h-4" /> Ready to learn
                                     </div>
                                     <button 
@@ -522,6 +563,13 @@
                                     >
                                         <Icons.Printer className="w-5 h-5" />
                                         Print PDF
+                                    </button>
+                                    <button 
+                                        onClick={exportToWord}
+                                        className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#2b6cb0] text-white font-medium shadow-md hover:bg-[#2c5282] transition-all"
+                                    >
+                                        <Icons.FileText className="w-5 h-5" />
+                                        下載 Word
                                     </button>
                                 </div>
                 
@@ -690,4 +738,3 @@
     </script>
 </body>
 </html>
-
