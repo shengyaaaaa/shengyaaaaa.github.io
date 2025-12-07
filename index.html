@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>房仲工作站</title>
+    <title>我的隨身工作站</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-            background-color: #F7F9F6; /* 極淺的綠灰色背景 */
+            background-color: #F7F9F6;
             margin: 0;
             padding: 0;
-            color: #4A5046; /* 深灰綠色文字，比純黑更柔和 */
+            color: #4A5046;
         }
 
         header {
@@ -19,7 +19,7 @@
             text-align: center;
             border-bottom-left-radius: 40px;
             border-bottom-right-radius: 40px;
-            box-shadow: 0 4px 20px rgba(116, 140, 112, 0.1); /* 帶點綠色的陰影 */
+            box-shadow: 0 4px 20px rgba(116, 140, 112, 0.1);
             margin-bottom: 30px;
         }
 
@@ -31,7 +31,7 @@
         }
 
         p.subtitle {
-            color: #8C9E88; /* 淺抹茶色副標題 */
+            color: #8C9E88;
             font-size: 0.9rem;
             margin-top: 10px;
         }
@@ -42,12 +42,11 @@
             padding: 0 20px 40px 20px;
         }
 
-        /* 卡片設計 */
         .card {
             background-color: white;
             border-radius: 24px;
             padding: 25px;
-            margin-bottom: 20px;
+            margin-bottom: 20px; /* 卡片之間的距離 */
             box-shadow: 0 10px 20px rgba(0,0,0,0.03);
             display: flex;
             align-items: center;
@@ -80,24 +79,23 @@
             color: #8C9E88;
         }
 
-        /* 抹茶綠按鈕/圖示區 */
         .card-action {
             display: flex;
             align-items: center;
             justify-content: center;
-            background-color: #748C70; /* 這裡就是您要的抹茶綠 */
+            background-color: #748C70; /* 統一的抹茶綠 */
             color: white;
             padding: 12px 20px;
-            border-radius: 50px; /* 膠囊狀按鈕，呼應圖片風格 */
+            border-radius: 50px;
             font-size: 0.9rem;
             font-weight: bold;
             margin-left: 15px;
             transition: background-color 0.2s;
+            min-width: 40px; /* 確保按鈕寬度一致 */
         }
         
-        /* 讓按鈕裡面看起來有點層次 */
         .card:hover .card-action {
-            background-color: #5F745B; /* 滑鼠移過去變深一點的抹茶 */
+            background-color: #5F745B;
         }
 
     </style>
@@ -105,8 +103,8 @@
 <body>
 
     <header>
-        <h1>Agent Tools</h1>
-        <p class="subtitle">Personal Workspace</p>
+        <h1>My Tools</h1>
+        <p class="subtitle">房產經紀人 ‧ 生活萬用箱</p>
     </header>
 
     <div class="container">
@@ -116,9 +114,7 @@
                 <span class="card-title">房貸試算</span>
                 <span class="card-desc">Loan Calculator</span>
             </div>
-            <div class="card-action">
-                開啟
-            </div>
+            <div class="card-action">開啟</div>
         </a>
 
         <a href="salescalc.html" class="card">
@@ -126,8 +122,16 @@
                 <span class="card-title">業績計算機</span>
                 <span class="card-desc">Commission & Sales</span>
             </div>
+            <div class="card-action">開啟</div>
+        </a>
+
+        <a href="gstat.html" class="card">
+            <div class="card-content">
+                <span class="card-title">團購小幫手</span>
+                <span class="card-desc">統計訂單、分帳計算</span>
+            </div>
             <div class="card-action">
-                開啟
+                🛍️
             </div>
         </a>
 
