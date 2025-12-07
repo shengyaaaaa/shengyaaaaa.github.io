@@ -97,7 +97,6 @@
             @page { margin: 1cm; size: A4; }
             
             html, body {
-                /* FORCE COLOR PRINTING */
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
                 color-adjust: exact !important;
@@ -121,12 +120,8 @@
                 width: 100% !important;
                 height: auto !important;
                 overflow: visible !important;
-                
-                /* Reset to light theme colors for printing, or keep user theme if preferred. 
-                   Here we enforce the "Light/Latte" theme for paper consistency. */
                 background-color: #ffffff !important; 
                 color: #433831 !important; 
-                
                 box-shadow: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
@@ -134,33 +129,28 @@
                 top: auto !important;
             }
 
-            /* Override global text colors back to colored version */
             p, h1, h3, li, span, div {
-                color: inherit !important; /* Inherit from #print-area unless specified */
+                color: inherit !important;
                 text-shadow: none !important;
             }
             
-            /* Restore Headers Color */
             h1 { color: #2C241F !important; }
             h2 { 
                 color: #433831 !important; 
-                border-bottom: 2px solid #E8E4DE !important; /* Restore border line */
+                border-bottom: 2px solid #E8E4DE !important;
             }
             
-            /* Restore Accent Colors (Orange) */
             .text-accent { 
                 color: #D98E56 !important; 
                 font-weight: bold !important; 
             }
             
-            /* Restore Highlight Backgrounds */
             .bg-highlight { 
                 background-color: #FFF8F0 !important; 
                 border-left: 4px solid #D98E56 !important; 
                 border: 1px solid #eee !important;
             }
             
-            /* Restore Info Bar Background */
             .info-bar-bg {
                 background-color: #F2F0EB !important;
             }
@@ -320,11 +310,13 @@
             ];
         
             const DIFFICULTY_OPTIONS = [
-                { value: "Beginner", label: "初級 (Beginner)", sub: "TOEIC 225-550 | IELTS 3.0-4.0 | A1-A2" },
-                { value: "Pre-Intermediate", label: "中初級 (Pre-Intermediate)", sub: "TOEIC 550-650 | IELTS 4.0-5.0 | A2-B1" },
-                { value: "Intermediate", label: "中級 (Intermediate)", sub: "TOEIC 650-785 | IELTS 5.0-6.0 | B1" },
-                { value: "Upper-Intermediate", label: "中高級 (Upper-Intermediate)", sub: "TOEIC 785-900 | IELTS 6.0-7.0 | B2" },
-                { value: "Advanced", label: "高級 (Advanced)", sub: "TOEIC 900-990 | IELTS 7.0-8.0 | C1" }
+                { value: "Novice", label: "新手 (Novice)", sub: "TOEIC 0-200 | IELTS 0-2.5 | A1" },
+                { value: "Beginner", label: "初級 (Beginner)", sub: "TOEIC 200-350 | IELTS 3.0-3.5 | A2" },
+                { value: "High Beginner", label: "中初級 (High Beginner)", sub: "TOEIC 350-550 | IELTS 4.0 | A2+" },
+                { value: "Pre-Intermediate", label: "中級預備 (Pre-Intermediate)", sub: "TOEIC 550-700 | IELTS 4.5-5.0 | B1" },
+                { value: "Intermediate", label: "中級 (Intermediate)", sub: "TOEIC 700-850 | IELTS 5.5-6.5 | B1+" },
+                { value: "Upper-Intermediate", label: "中高級 (Upper-Intermediate)", sub: "TOEIC 850-945 | IELTS 7.0-7.5 | B2" },
+                { value: "Advanced", label: "高級 (Advanced)", sub: "TOEIC 945+ | IELTS 8.0+ | C1" }
             ];
         
             const handleRandomTopic = () => {
