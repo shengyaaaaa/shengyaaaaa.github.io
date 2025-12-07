@@ -39,13 +39,13 @@
             /* Dark Theme (Audiophile Night) */
             --bg-body: #1a1a1a;
             --bg-panel: #262626;
-            --bg-paper: #1e1e1e; /* Darker paper for comfort */
-            --text-main: #e0e0e0; /* Off-white text */
+            --bg-paper: #1e1e1e;
+            --text-main: #e0e0e0;
             --text-muted: #a0a0a0;
-            --accent: #ff9d5c; /* Brighter orange/amber like tubes */
+            --accent: #ff9d5c;
             --accent-hover: #ffb07c;
-            --shadow-light: #333333; /* Dark neumorphism highlights */
-            --shadow-dark: #151515;  /* Dark neumorphism shadows */
+            --shadow-light: #333333;
+            --shadow-dark: #151515;
             --highlight-bg: #2d2a26;
             --highlight-border: #ff9d5c;
         }
@@ -57,7 +57,7 @@
             transition: background-color 0.5s ease, color 0.5s ease;
         }
         
-        /* Neumorphism Utilities (Dynamic) */
+        /* Neumorphism Utilities */
         .shadow-neumorph {
             box-shadow: 9px 9px 18px var(--shadow-dark), -9px -9px 18px var(--shadow-light);
             background-color: var(--bg-panel);
@@ -75,7 +75,6 @@
             background-color: var(--bg-panel);
         }
 
-        /* Paper Styles (Dynamic) */
         .paper-shadow {
             box-shadow: 0 20px 40px -15px rgba(0,0,0,0.2);
         }
@@ -93,13 +92,17 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* --- ULTIMATE PRINT FIXES --- */
+        /* --- COLOR PDF PRINT FIXES --- */
         @media print {
             @page { margin: 1cm; size: A4; }
             
             html, body {
+                /* FORCE COLOR PRINTING */
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+                color-adjust: exact !important;
+                
                 background: white !important;
-                color: black !important;
                 height: auto !important;
                 overflow: visible !important;
                 margin: 0 !important;
@@ -118,8 +121,12 @@
                 width: 100% !important;
                 height: auto !important;
                 overflow: visible !important;
-                background: white !important;
-                color: black !important;
+                
+                /* Reset to light theme colors for printing, or keep user theme if preferred. 
+                   Here we enforce the "Light/Latte" theme for paper consistency. */
+                background-color: #ffffff !important; 
+                color: #433831 !important; 
+                
                 box-shadow: none !important;
                 margin: 0 !important;
                 padding: 0 !important;
@@ -127,18 +134,39 @@
                 top: auto !important;
             }
 
-            p, h1, h2, h3, li, span, div {
-                color: black !important;
+            /* Override global text colors back to colored version */
+            p, h1, h3, li, span, div {
+                color: inherit !important; /* Inherit from #print-area unless specified */
                 text-shadow: none !important;
             }
             
-            /* High contrast for print */
-            .text-accent { color: #000 !important; font-weight: bold !important; }
-            .bg-highlight { border: 1px solid #ccc !important; background-color: #f8f8f8 !important; }
-            .break-inside-avoid { page-break-inside: avoid; }
+            /* Restore Headers Color */
+            h1 { color: #2C241F !important; }
+            h2 { 
+                color: #433831 !important; 
+                border-bottom: 2px solid #E8E4DE !important; /* Restore border line */
+            }
             
-            /* Hide speaker icons in print */
+            /* Restore Accent Colors (Orange) */
+            .text-accent { 
+                color: #D98E56 !important; 
+                font-weight: bold !important; 
+            }
+            
+            /* Restore Highlight Backgrounds */
+            .bg-highlight { 
+                background-color: #FFF8F0 !important; 
+                border-left: 4px solid #D98E56 !important; 
+                border: 1px solid #eee !important;
+            }
+            
+            /* Restore Info Bar Background */
+            .info-bar-bg {
+                background-color: #F2F0EB !important;
+            }
+
             .speaker-icon { display: none !important; }
+            .break-inside-avoid { page-break-inside: avoid; }
         }
     </style>
 </head>
@@ -179,8 +207,6 @@
             const [isSpeaking, setIsSpeaking] = useState(false);
 
             // --- Effects ---
-            
-            // Load Settings
             useEffect(() => {
                 const storedKey = localStorage.getItem('gemini_api_key');
                 if (storedKey) {
@@ -189,7 +215,6 @@
                     setShowApiKeyInput(true);
                 }
 
-                // Check system preference or saved preference
                 const savedTheme = localStorage.getItem('theme');
                 if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     setIsDarkMode(true);
@@ -197,7 +222,6 @@
                 }
             }, []);
 
-            // Toggle Theme
             const toggleTheme = () => {
                 const newMode = !isDarkMode;
                 setIsDarkMode(newMode);
@@ -221,14 +245,12 @@
                     return;
                 }
 
-                // KEY FIX: Strip out HTML tags before speaking
                 const plainText = text.replace(/<[^>]*>/g, '');
 
                 const utterance = new SpeechSynthesisUtterance(plainText);
-                utterance.lang = 'en-US'; // Default to US English
-                utterance.rate = 0.9; // Slightly slower for learning
+                utterance.lang = 'en-US';
+                utterance.rate = 0.9;
                 
-                // Try to find a good voice
                 const voices = window.speechSynthesis.getVoices();
                 const preferredVoice = voices.find(v => v.name.includes('Google US English')) || voices.find(v => v.lang === 'en-US');
                 if (preferredVoice) utterance.voice = preferredVoice;
@@ -803,7 +825,13 @@
                                                     {/* Definitions Grid */}
                                                     <div className="grid grid-cols-1 gap-4 mb-4">
                                                         
-                                                        {/* Instant Understanding */}
+                                                        {/* English Def (Moved Up) */}
+                                                        <div className="leading-snug pl-1" style={{ color: 'var(--text-main)' }}>
+                                                            <span className="font-bold mr-2 text-sm uppercase">Eng Def:</span>
+                                                            {vocab.englishDef}
+                                                        </div>
+
+                                                        {/* Instant Understanding (Moved Down) */}
                                                         <div className="p-4 rounded-xl border-l-4 bg-highlight" style={{ backgroundColor: 'var(--highlight-bg)', borderColor: 'var(--highlight-border)' }}>
                                                             <div className="font-bold text-xs mb-1 font-sans uppercase tracking-wider flex items-center gap-2 text-[var(--accent)] text-accent">
                                                                 <Icons.Sparkles className="w-3 h-3" /> Instant Understanding (中文秒懂)
@@ -811,12 +839,6 @@
                                                             <p className="leading-relaxed text-sm md:text-base font-medium" style={{ color: 'var(--text-main)' }}>
                                                                 {vocab.instantUnd}
                                                             </p>
-                                                        </div>
-                            
-                                                        {/* English Def */}
-                                                        <div className="leading-snug pl-1" style={{ color: 'var(--text-main)' }}>
-                                                            <span className="font-bold mr-2 text-sm uppercase">Eng Def:</span>
-                                                            {vocab.englishDef}
                                                         </div>
                                                     </div>
                             
