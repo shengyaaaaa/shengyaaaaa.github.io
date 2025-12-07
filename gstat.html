@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>團購統計小幫手 - 設計版</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- 設定 Google Fonts (Noto Sans TC) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'paper': '#F3EDE6', // 暖米色背景
+                        'charcoal': '#2D2D2D', // 深灰文字
+                        'accent': '#E65142', // 磚紅強調色
+                        'accent-dark': '#C03528',
+                        'card': '#FFFFFF',
+                        'soft-gray': '#E5E0D8'
+                    },
+                    fontFamily: {
+                        sans: ['"Noto Sans TC"', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        '4xl': '2rem',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: #F3EDE6;
+            color: #2D2D2D;
+            touch-action: manipulation;
+            overflow-x: hidden; /* 防止裝飾圓圈撐開頁面 */
+        }
+
+        /* 裝飾背景圓圈 */
+        .deco-circle {
+            position: fixed;
+            border-radius: 50%;
+            z-index: -1;
+            pointer-events: none;
+        }
+        .circle-1 {
+            width: 300px;
+            height: 300px;
+            background-color: #E65142;
+            opacity: 0.08;
+            top: -100px;
+            left: -100px;
+        }
+        .circle-2 {
+            width: 200px;
+            height: 200px;
+            border: 2px solid #2D2D2D;
+            opacity: 0.1;
+            bottom: 100px;
+            right: -50px;
+        }
+        
+        /* 自訂輸入框樣式 (底線風格) */
+        .input-minimal {
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid #E5E0D8;
+            padding: 8px 0;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            width: 100%;
+            border-radius: 0;
+        }
+        .input-minimal:focus {
+            outline: none;
+            border-bottom-color: #E65142;
+        }
+        .input-minimal::placeholder {
+            color: #A09B95;
+        }
+
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up {
+            animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+    </style>
+</head>
+<body class="pb-32 relative">
+
+    <!-- 背景裝飾 -->
+    <div class="deco-circle circle-1"></div>
+    <div class="deco-circle circle-2"></div>
+
+    <!-- 頂部標題區 -->
+    <header class="pt-8 pb-4 px-6 sticky top-0 z-10 bg-[#F3EDE6]/90 backdrop-blur-sm transition-all">
+        <div class="max-w-md mx-auto flex justify-between items-end border-b-2 border-charcoal/10 pb-4">
+            <div>
+                <div class="text-xs font-bold tracking-widest text-charcoal/50 mb-1 uppercase">Group Order</div>
+                <h1 class="text-2xl font-bold text-charcoal flex items-center gap-2">
+                    <span class="bg-charcoal text-paper p-1 rounded">GO</span> 團購小幫手
+                </h1>
+            </div>
+            <div class="flex flex-col items-end">
+                <span class="text-xs text-charcoal/60 font-medium">Total Amount</span>
+                <div class="text-2xl font-bold text-accent">
+                    $<span id="header-total">0</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-md mx-auto px-6 mt-4">
+        
+        <!-- 輸入區塊 (卡片設計) -->
+        <div class="bg-card rounded-4xl p-6 shadow-xl shadow-charcoal/5 mb-8 animate-slide-up relative overflow-hidden">
+            <!-- 卡片頂部裝飾線 -->
+            <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-accent to-orange-300"></div>
+
+            <h2 class="text-lg font-bold mb-6 flex items-center gap-2 text-charcoal">
+                <i data-lucide="edit-3" class="w-5 h-5 text-accent"></i> 新增訂單
+            </h2>
+            
+            <form id="order-form" class="space-y-5">
+                <!-- 姓名 -->
+                <div>
+                    <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider">Name</label>
+                    <input type="text" id="input-name" placeholder="請輸入姓名" class="input-minimal text-lg" required>
+                </div>
+
+                <!-- 常用菜單 (Pill 風格) -->
+                <div>
+                    <div class="flex justify-between items-center mb-3">
+                        <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider">Menu</label>
+                        <button type="button" id="btn-toggle-edit-menu" class="text-xs flex items-center gap-1 text-charcoal/50 hover:text-accent transition-colors">
+                            <i data-lucide="settings-2" class="w-3 h-3"></i> <span id="menu-edit-text">編輯</span>
+                        </button>
+                    </div>
+                    <div id="menu-container" class="flex flex-wrap gap-2 transition-all">
+                        <!-- 菜單 JS 生成 -->
+                    </div>
+                </div>
+
+                <!-- 品項與價格 -->
+                <div class="grid grid-cols-12 gap-4">
+                    <div class="col-span-8">
+                        <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider">Item</label>
+                        <input type="text" id="input-item" placeholder="品項名稱" class="input-minimal" required>
+                    </div>
+                    <div class="col-span-4">
+                        <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider">Price</label>
+                        <input type="number" id="input-price" placeholder="$" class="input-minimal" required>
+                    </div>
+                </div>
+                
+                <!-- 數量與備註 -->
+                <div class="grid grid-cols-12 gap-4 items-end">
+                    <div class="col-span-3">
+                        <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider">Qty</label>
+                        <input type="number" id="input-quantity" value="1" min="1" class="input-minimal text-center font-bold text-accent" required>
+                    </div>
+                    <div class="col-span-9">
+                        <div class="flex justify-between items-center mb-1">
+                            <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider">Note</label>
+                            <button type="button" id="btn-toggle-edit-tags" class="text-xs flex items-center gap-1 text-charcoal/50 hover:text-accent transition-colors">
+                                <i data-lucide="plus-circle" class="w-3 h-3"></i> <span id="tag-edit-text">選項</span>
+                            </button>
+                        </div>
+                        <input type="text" id="input-note" placeholder="備註 (如: 微糖)" class="input-minimal">
+                    </div>
+                </div>
+
+                <!-- 快速標籤 -->
+                <div id="tags-container" class="mt-1 flex flex-wrap gap-2 transition-all">
+                    <!-- 標籤 JS 生成 -->
+                </div>
+
+                <button type="submit" class="w-full bg-charcoal hover:bg-black text-white font-bold py-4 rounded-2xl shadow-lg shadow-charcoal/20 transition-all active:scale-95 flex justify-center items-center gap-2 mt-4 group">
+                    <span>Add to List</span> <i data-lucide="arrow-right" class="w-4 h-4 group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- 頁籤切換 (極簡風格) -->
+        <div class="flex mb-6 bg-charcoal/5 p-1 rounded-2xl">
+            <button type="button" id="tab-list" class="flex-1 py-3 text-sm font-bold rounded-xl flex justify-center items-center gap-2 transition-all bg-card text-charcoal shadow-sm">
+                <i data-lucide="list" class="w-4 h-4"></i> 清單 (<span id="count-badge">0</span>)
+            </button>
+            <button type="button" id="tab-summary" class="flex-1 py-3 text-sm font-bold rounded-xl flex justify-center items-center gap-2 transition-all text-charcoal/50 hover:text-charcoal">
+                <i data-lucide="pie-chart" class="w-4 h-4"></i> 統計
+            </button>
+        </div>
+
+        <!-- 內容顯示區 -->
+        <div id="content-area" class="space-y-4">
+            <!-- 內容 JS 生成 -->
+        </div>
+
+    </main>
+
+    <!-- 底部浮動按鈕 -->
+    <div class="fixed bottom-6 left-6 right-6 z-20">
+        <div class="max-w-md mx-auto flex gap-3">
+            <button type="button" id="btn-clear" class="w-14 h-14 bg-white border-2 border-charcoal/10 hover:border-accent text-charcoal hover:text-accent rounded-full font-medium transition-colors flex justify-center items-center shadow-lg active:scale-90">
+                <i data-lucide="trash-2" class="w-5 h-5"></i>
+            </button>
+            <button type="button" id="btn-copy" class="flex-1 bg-accent hover:bg-accent-dark text-white py-3 rounded-full font-bold transition-colors flex justify-center items-center gap-2 shadow-lg shadow-accent/30 active:scale-95">
+                <i data-lucide="copy" class="w-5 h-5"></i> 複製給群組
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript 邏輯 (完全保留原有功能) -->
+    <script>
+        // --- 初始化資料與狀態 ---
+        const defaultTags = ["微糖", "半糖", "無糖", "少冰", "去冰", "溫", "熱", "加辣", "不加蔥"];
+        const defaultMenu = [
+            { name: "珍珠奶茶", price: 50 },
+            { name: "紅茶", price: 30 },
+            { name: "拿鐵", price: 60 }
+        ];
+        
+        let state = {
+            orders: JSON.parse(localStorage.getItem('groupOrders')) || [],
+            tags: JSON.parse(localStorage.getItem('groupOrderTags')) || defaultTags,
+            menuItems: JSON.parse(localStorage.getItem('groupOrderMenu')) || defaultMenu,
+            activeTab: 'list', 
+            isEditingTags: false,
+            isEditingMenu: false
+        };
+
+        state.orders = state.orders.map(o => ({...o, quantity: o.quantity || 1}));
+
+        // --- DOM 元素 ---
+        const els = {
+            headerTotal: document.getElementById('header-total'),
+            form: document.getElementById('order-form'),
+            inputs: {
+                name: document.getElementById('input-name'),
+                price: document.getElementById('input-price'),
+                quantity: document.getElementById('input-quantity'),
+                item: document.getElementById('input-item'),
+                note: document.getElementById('input-note')
+            },
+            tagsContainer: document.getElementById('tags-container'),
+            menuContainer: document.getElementById('menu-container'),
+            btnToggleEditTags: document.getElementById('btn-toggle-edit-tags'),
+            tagEditText: document.getElementById('tag-edit-text'),
+            btnToggleEditMenu: document.getElementById('btn-toggle-edit-menu'),
+            menuEditText: document.getElementById('menu-edit-text'),
+            tabList: document.getElementById('tab-list'),
+            tabSummary: document.getElementById('tab-summary'),
+            countBadge: document.getElementById('count-badge'),
+            contentArea: document.getElementById('content-area'),
+            btnClear: document.getElementById('btn-clear'),
+            btnCopy: document.getElementById('btn-copy')
+        };
+
+        // --- 核心與渲染 ---
+
+        function saveState() {
+            localStorage.setItem('groupOrders', JSON.stringify(state.orders));
+            localStorage.setItem('groupOrderTags', JSON.stringify(state.tags));
+            localStorage.setItem('groupOrderMenu', JSON.stringify(state.menuItems));
+            render();
+        }
+
+        function calculateTotal() {
+            return state.orders.reduce((sum, order) => sum + (order.price * order.quantity), 0);
+        }
+
+        function render() {
+            const total = calculateTotal();
+            els.headerTotal.textContent = total;
+            els.countBadge.textContent = state.orders.length;
+
+            renderTags();
+            renderMenu();
+
+            if (state.orders.length === 0) {
+                renderEmptyState();
+            } else if (state.activeTab === 'list') {
+                renderGroupedList();
+            } else {
+                renderSummary();
+            }
+            
+            updateTabStyles();
+            lucide.createIcons();
+        }
+
+        function renderEmptyState() {
+            els.contentArea.innerHTML = `
+                <div class="text-center py-16 text-charcoal/30 flex flex-col items-center justify-center">
+                    <div class="w-20 h-20 bg-charcoal/5 rounded-full flex items-center justify-center mb-4">
+                        <i data-lucide="coffee" class="w-10 h-10 opacity-50"></i>
+                    </div>
+                    <p class="font-medium">清單是空的</p>
+                    <p class="text-xs mt-1">開始新增第一筆訂單吧！</p>
+                </div>
+            `;
+        }
+
+        function renderGroupedList() {
+            const groupedOrders = {};
+            state.orders.forEach(order => {
+                const name = order.name.trim();
+                if (!groupedOrders[name]) {
+                    groupedOrders[name] = { name: name, items: [], total: 0 };
+                }
+                groupedOrders[name].items.push(order);
+                groupedOrders[name].total += (order.price * order.quantity);
+            });
+
+            let html = '';
+            
+            Object.values(groupedOrders).forEach(person => {
+                html += `
+                    <div class="bg-card rounded-3xl p-5 shadow-sm border border-charcoal/5 animate-slide-up hover:shadow-md transition-shadow">
+                        <div class="flex justify-between items-center mb-4 border-b border-dashed border-charcoal/10 pb-3">
+                            <span class="font-bold text-lg text-charcoal flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full bg-accent"></span>
+                                ${escapeHtml(person.name)}
+                            </span>
+                            <span class="text-sm font-bold text-accent bg-accent/10 px-3 py-1 rounded-full">
+                                $${person.total}
+                            </span>
+                        </div>
+                        <div class="space-y-3">
+                `;
+
+                person.items.forEach(order => {
+                    html += `
+                        <div class="flex justify-between items-start group">
+                            <div class="flex-1">
+                                <div class="text-charcoal font-medium flex items-center gap-2">
+                                    ${escapeHtml(order.item)} 
+                                    <span class="text-xs font-bold bg-charcoal text-white px-1.5 rounded-md min-w-[20px] text-center">x${order.quantity}</span>
+                                </div>
+                                <div class="text-xs text-charcoal/40 mt-0.5 font-mono">$${order.price}/unit</div>
+                                ${order.note ? `<div class="text-xs text-charcoal/60 mt-1 flex items-center gap-1"><i data-lucide="message-circle" class="w-3 h-3"></i> ${escapeHtml(order.note)}</div>` : ''}
+                            </div>
+                            <button type="button" onclick="deleteOrder(${order.id})" class="text-charcoal/20 hover:text-accent p-2 rounded-full hover:bg-accent/5 transition-all">
+                                <i data-lucide="x" class="w-4 h-4"></i>
+                            </button>
+                        </div>
+                    `;
+                });
+
+                html += `
+                        </div>
+                    </div>
+                `;
+            });
+
+            els.contentArea.innerHTML = html;
+        }
+
+        function renderSummary() {
+            const groups = {};
+            state.orders.forEach(order => {
+                const key = `${order.item} ${order.note ? `(${order.note})` : ''}`;
+                if (!groups[key]) groups[key] = { count: 0, total: 0 };
+                groups[key].count += order.quantity;
+                groups[key].total += (order.price * order.quantity);
+            });
+
+            let html = `
+                <div class="bg-card rounded-3xl shadow-sm border border-charcoal/5 overflow-hidden animate-slide-up">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-charcoal/5 text-charcoal/50 uppercase text-xs font-bold tracking-wider">
+                            <tr>
+                                <th class="px-5 py-4">Item</th>
+                                <th class="px-5 py-4 text-center">Qty</th>
+                                <th class="px-5 py-4 text-right">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-charcoal/5">
+            `;
+
+            for (const [key, value] of Object.entries(groups)) {
+                html += `
+                    <tr>
+                        <td class="px-5 py-4 font-bold text-charcoal">${escapeHtml(key)}</td>
+                        <td class="px-5 py-4 text-center font-mono text-charcoal/70">x${value.count}</td>
+                        <td class="px-5 py-4 text-right font-bold text-accent font-mono">$${value.total}</td>
+                    </tr>
+                `;
+            }
+
+            html += `
+                        </tbody>
+                    </table>
+                    <div class="p-5 bg-charcoal text-paper flex justify-between items-center">
+                        <span class="font-bold uppercase tracking-wider text-xs">Total Amount</span>
+                        <span class="text-xl font-bold font-mono">$${calculateTotal()}</span>
+                    </div>
+                </div>
+            `;
+            els.contentArea.innerHTML = html;
+        }
+
+        function renderMenu() {
+            // Style logic for Edit Mode
+            if (state.isEditingMenu) {
+                els.menuContainer.classList.add('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.menuEditText.textContent = '完成';
+                els.btnToggleEditMenu.classList.add('text-accent');
+            } else {
+                els.menuContainer.classList.remove('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.menuEditText.textContent = '編輯';
+                els.btnToggleEditMenu.classList.remove('text-accent');
+            }
+
+            let html = '';
+            if (state.isEditingMenu) {
+                html += `
+                    <div class="w-full flex gap-2 mb-2 items-center">
+                        <input type="text" id="new-menu-name" placeholder="品項" class="flex-1 p-2 text-sm bg-white border-none rounded-lg shadow-sm focus:ring-2 focus:ring-accent outline-none">
+                        <input type="number" id="new-menu-price" placeholder="$" class="w-16 p-2 text-sm bg-white border-none rounded-lg shadow-sm focus:ring-2 focus:ring-accent outline-none">
+                        <button type="button" onclick="addNewMenu()" class="bg-charcoal text-white px-3 py-2 rounded-lg text-xs font-bold">Add</button>
+                    </div>
+                `;
+            }
+
+            state.menuItems.forEach((menu, index) => {
+                if (state.isEditingMenu) {
+                    html += `
+                        <button type="button" onclick="deleteMenu(${index})" class="text-xs px-3 py-2 rounded-full flex items-center gap-1 bg-white border border-red-200 text-red-500 shadow-sm">
+                            ${escapeHtml(menu.name)} $${menu.price} <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    `;
+                } else {
+                    html += `
+                        <button type="button" onclick="applyMenu('${escapeHtml(menu.name)}', ${menu.price})" class="text-xs px-4 py-2 rounded-full border border-charcoal/10 bg-white text-charcoal hover:bg-accent hover:text-white hover:border-accent active:scale-95 transition-all shadow-sm font-medium">
+                            ${escapeHtml(menu.name)} <span class="opacity-60 text-[10px] ml-1">$${menu.price}</span>
+                        </button>
+                    `;
+                }
+            });
+            els.menuContainer.innerHTML = html;
+        }
+
+        function renderTags() {
+            if (state.isEditingTags) {
+                els.tagsContainer.classList.add('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.tagEditText.textContent = '完成';
+                els.btnToggleEditTags.classList.add('text-accent');
+            } else {
+                els.tagsContainer.classList.remove('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.tagEditText.textContent = '選項';
+                els.btnToggleEditTags.classList.remove('text-accent');
+            }
+
+            let html = '';
+            if (state.isEditingTags) {
+                html += `
+                    <div class="flex gap-2 mb-2 w-full">
+                        <input type="text" id="new-tag-input" placeholder="新選項" 
+                            class="flex-1 p-2 text-sm bg-white border-none rounded-lg shadow-sm focus:ring-2 focus:ring-accent outline-none"
+                            onkeydown="if(event.key === 'Enter'){ event.preventDefault(); addNewTag(); }">
+                        <button type="button" onclick="addNewTag()" class="bg-charcoal text-white px-3 py-2 rounded-lg text-xs font-bold">Add</button>
+                    </div>
+                `;
+            }
+
+            state.tags.forEach(tag => {
+                if (state.isEditingTags) {
+                    html += `
+                        <button type="button" onclick="deleteTag('${escapeHtml(tag)}')" class="text-xs px-3 py-1.5 rounded-lg flex items-center gap-1 bg-white text-red-500 border border-red-100">
+                            ${escapeHtml(tag)} <i data-lucide="x" class="w-3 h-3"></i>
+                        </button>
+                    `;
+                } else {
+                    html += `
+                        <button type="button" onclick="addTagToNote('${escapeHtml(tag)}')" class="text-xs px-3 py-1.5 rounded-lg transition-all bg-charcoal/5 text-charcoal/70 hover:bg-charcoal hover:text-white">
+                            ${escapeHtml(tag)}
+                        </button>
+                    `;
+                }
+            });
+            els.tagsContainer.innerHTML = html;
+        }
+
+        function updateTabStyles() {
+            const activeClass = ["bg-card", "text-charcoal", "shadow-sm"];
+            const inactiveClass = ["bg-transparent", "text-charcoal/50", "hover:text-charcoal"];
+
+            if (state.activeTab === 'list') {
+                els.tabList.classList.add(...activeClass);
+                els.tabList.classList.remove('bg-transparent', 'text-charcoal/50');
+                els.tabSummary.classList.remove(...activeClass);
+                els.tabSummary.classList.add(...inactiveClass);
+            } else {
+                els.tabSummary.classList.add(...activeClass);
+                els.tabSummary.classList.remove('bg-transparent', 'text-charcoal/50');
+                els.tabList.classList.remove(...activeClass);
+                els.tabList.classList.add(...inactiveClass);
+            }
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.toString()
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // --- 事件處理 (邏輯不變) ---
+        els.form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const qty = Number(els.inputs.quantity.value) > 0 ? Number(els.inputs.quantity.value) : 1;
+            const newOrder = {
+                id: Date.now(),
+                name: els.inputs.name.value.trim(),
+                price: Number(els.inputs.price.value),
+                item: els.inputs.item.value.trim(),
+                quantity: qty,
+                note: els.inputs.note.value.trim(),
+                timestamp: new Date().toLocaleString()
+            };
+            state.orders.push(newOrder);
+            els.inputs.item.value = '';
+            els.inputs.price.value = '';
+            els.inputs.note.value = '';
+            els.inputs.quantity.value = 1;
+            saveState();
+        });
+
+        window.deleteOrder = (id) => {
+            if (confirm('確定要刪除這筆訂單嗎？')) {
+                state.orders = state.orders.filter(o => o.id !== id);
+                saveState();
+            }
+        };
+
+        els.btnToggleEditMenu.addEventListener('click', () => { state.isEditingMenu = !state.isEditingMenu; render(); });
+        window.addNewMenu = () => {
+            const name = document.getElementById('new-menu-name').value.trim();
+            const price = document.getElementById('new-menu-price').value;
+            if (name && price) { state.menuItems.push({ name, price: Number(price) }); saveState(); }
+        };
+        window.deleteMenu = (index) => { state.menuItems.splice(index, 1); saveState(); };
+        window.applyMenu = (name, price) => { els.inputs.item.value = name; els.inputs.price.value = price; };
+
+        els.btnToggleEditTags.addEventListener('click', () => { state.isEditingTags = !state.isEditingTags; render(); });
+        window.addNewTag = () => {
+            const val = document.getElementById('new-tag-input').value.trim();
+            if (val && !state.tags.includes(val)) { state.tags.push(val); saveState(); }
+            setTimeout(() => document.getElementById('new-tag-input')?.focus(), 50);
+        };
+        window.deleteTag = (tag) => { state.tags = state.tags.filter(t => t !== tag); saveState(); };
+        window.addTagToNote = (tag) => {
+            const current = els.inputs.note.value;
+            els.inputs.note.value = current ? `${current} ${tag}` : tag;
+        };
+
+        els.tabList.addEventListener('click', () => { state.activeTab = 'list'; render(); });
+        els.tabSummary.addEventListener('click', () => { state.activeTab = 'summary'; render(); });
+
+        els.btnClear.addEventListener('click', () => {
+            if (confirm('確定要清空所有訂單嗎？')) { state.orders = []; localStorage.removeItem('groupOrders'); render(); }
+        });
+
+        els.btnCopy.addEventListener('click', () => {
+            let text = `📋 團購清單統計\n------------------\n`;
+            const groupedOrders = {};
+            state.orders.forEach(order => {
+                const name = order.name.trim();
+                if (!groupedOrders[name]) groupedOrders[name] = { items: [], total: 0 };
+                groupedOrders[name].items.push(order);
+                groupedOrders[name].total += (order.price * order.quantity);
+            });
+
+            let index = 1;
+            Object.entries(groupedOrders).forEach(([name, data]) => {
+                const itemDetails = data.items.map(o => {
+                    let s = `${o.item}`;
+                    if (o.quantity > 1) s += ` x${o.quantity}`;
+                    if (o.note) s += ` (${o.note})`;
+                    return s;
+                }).join(", ");
+                text += `${index}. ${name}: ${itemDetails} [總計$${data.total}]\n`;
+                index++;
+            });
+
+            text += `------------------\n`;
+            text += `💰 總金額: $${calculateTotal()}\n`;
+            text += `🥤 總數量: ${state.orders.reduce((sum, o) => sum + o.quantity, 0)} 份\n`;
+            text += `\n🛒 店家點餐用:\n`;
+            
+            const groups = {};
+            state.orders.forEach(order => {
+                const key = `${order.item} ${order.note ? `(${order.note})` : ''}`;
+                if (!groups[key]) groups[key] = { count: 0 };
+                groups[key].count += order.quantity;
+            });
+            Object.entries(groups).forEach(([key, value]) => { text += `• ${key} x${value.count}\n`; });
+
+            navigator.clipboard.writeText(text)
+                .then(() => alert('訂單已複製！可以貼到 LINE 群組囉！'))
+                .catch(() => {
+                    const ta = document.createElement("textarea");
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    alert('訂單已複製！可以貼到 LINE 群組囉！');
+                });
+        });
+
+        render();
+    </script>
+</body>
+</html>
