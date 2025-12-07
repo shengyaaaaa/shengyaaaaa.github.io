@@ -221,7 +221,10 @@
                     return;
                 }
 
-                const utterance = new SpeechSynthesisUtterance(text);
+                // KEY FIX: Strip out HTML tags before speaking
+                const plainText = text.replace(/<[^>]*>/g, '');
+
+                const utterance = new SpeechSynthesisUtterance(plainText);
                 utterance.lang = 'en-US'; // Default to US English
                 utterance.rate = 0.9; // Slightly slower for learning
                 
@@ -537,7 +540,7 @@
                             </div>
                             <div>
                                 <h1 className="text-2xl font-bold tracking-wide">LOBSTER English Studio</h1>
-                                <p className="text-xs opacity-60 font-medium tracking-wider uppercase"> Powered Learning</p>
+                                <p className="text-xs opacity-60 font-medium tracking-wider uppercase">LOBSTER Powered Learning</p>
                             </div>
                         </div>
                         <div className="flex gap-4 items-center">
