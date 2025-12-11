@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>English Learning Studio</title>
+    <title>LOBSTER English Learning Studio</title>
     <link rel="apple-touch-icon" href="icon.png">
     
     <!-- React & ReactDOM -->
@@ -180,7 +180,7 @@
                     setIsSpeaking(false);
                     return;
                 }
-                const plainText = text.replace(/<[^>]*>/g, '');
+                const plainText = text.replace(/<[^>]*>/g, '').replace(/\*\*(.*?)\*\*/g, '$1'); // Handle both HTML and Markdown bold
                 const utterance = new SpeechSynthesisUtterance(plainText);
                 utterance.lang = 'en-US';
                 utterance.rate = 0.9;
@@ -257,7 +257,20 @@
         
             const handleRandomTopic = () => setTopic(RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)]);
             const handlePresetClick = (preset) => setTopic(preset);
-            const renderFormattedText = (text) => text ? text.split(/(<b>.*?<\/b>)/g).map((part, i) => part.startsWith('<b>') ? <b key={i} className="text-accent">{part.replace(/<\/?b>/g, '')}</b> : <span key={i}>{part}</span>) : null;
+            const renderFormattedText = (text) => {
+                if (!text) return null;
+                // Handle BOTH <b> and ** formats for display
+                const parts = text.split(/(<b>.*?<\/b>|\*\*.*?\*\*)/g);
+                return parts.map((part, index) => {
+                    if (part.startsWith('<b>') && part.endsWith('</b>')) {
+                        return <b key={index} className="text-accent">{part.replace(/<\/?b>/g, '')}</b>;
+                    }
+                    if (part.startsWith('**') && part.endsWith('**')) {
+                        return <b key={index} className="text-accent">{part.replace(/\*\*/g, '')}</b>;
+                    }
+                    return <span key={index}>{part}</span>;
+                });
+            };
         
             const generateMaterial = async () => {
                 if (!topic) return;
