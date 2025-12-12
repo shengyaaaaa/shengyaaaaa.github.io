@@ -252,7 +252,8 @@
                 { value: "Tech", label: "Tech & Future (Wired / The Verge)", desc: "Crisp, analytical, forward-looking, precise." },
                 { value: "Literary", label: "Literary (The New Yorker)", desc: "Sophisticated, narrative-driven, complex structures." },
                 { value: "Academic", label: "Academic (TOEIC / IELTS / Science)", desc: "Formal, objective, structured, vocabulary-rich." },
-                { value: "Casual", label: "Casual (Blog / Podcast)", desc: "Conversational, friendly, idiomatic, relaxed." }
+                { value: "Casual", label: "Casual (Blog / Podcast)", desc: "Conversational, friendly, idiomatic, relaxed." },
+                { value: "Fiction", label: "Fiction / Short Story", desc: "Narrative, creative, character-driven, immersive." }
             ];
         
             const handleRandomTopic = () => setTopic(RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)]);
@@ -303,6 +304,8 @@
                     styleInstruction = "Write a formal, structured passage suitable for TOEIC Part 7 or IELTS Reading. Maintain objectivity, use transition words (However, Therefore), and focus on logic and facts.";
                 } else if (style === "Casual") {
                     styleInstruction = "Write like a popular blogger or podcaster. Be friendly, conversational, and use idioms. It's okay to use contractions (don't, can't) and address the reader directly ('You might wonder...').";
+                } else if (style === "Fiction") {
+                    styleInstruction = "Write a short creative fiction or narrative story. Focus on plot, character, and setting. Use descriptive language and dialogue to bring the story to life. Ensure it is immersive and engaging.";
                 }
 
                 const systemPrompt = `
@@ -399,7 +402,7 @@
                     <header className="pt-8 pb-6 px-4 no-print flex items-center justify-between max-w-5xl mx-auto">
                         <div className="flex items-center gap-3">
                             <div className="p-3 rounded-2xl shadow-neumorph-sm text-[var(--accent)]"><Icons.Coffee className="w-6 h-6" /></div>
-                            <div><h1 className="text-2xl font-bold tracking-wide">LOBSTER English Studio</h1><p className="text-xs opacity-60 font-medium tracking-wider uppercase">GAY BLESS YOU!</p></div>
+                            <div><h1 className="text-2xl font-bold tracking-wide">LOBSTER English Studio</h1><p className="text-xs opacity-60 font-medium tracking-wider uppercase">OH MY GAY!</p></div>
                         </div>
                         <div className="flex gap-4 items-center">
                             <button onClick={toggleTheme} className="p-2 rounded-full bg-[var(--bg-panel)] shadow-neumorph-sm hover:text-[var(--accent)] transition-colors">{isDarkMode ? <Icons.Sun className="w-5 h-5" /> : <Icons.Moon className="w-5 h-5" />}</button>
