@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>釜山買買團 2025</title>
+    <title>釜山買買團</title>
+    
+    <!-- 新增：設定網頁圖示 (請確保 icon2.png 與此檔案在同目錄) -->
+    <link rel="icon" type="image/png" href="icon2.png">
+    <link rel="apple-touch-icon" href="icon2.png">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
@@ -78,7 +83,12 @@
         <div class="flex justify-between items-start mb-6">
             <div>
                 <p class="text-gray-300 text-base mb-1">2025年 12月 15日 - 18日</p>
-                <h1 class="text-4xl font-bold tracking-wide mb-2">釜山買買團</h1>
+                <!-- 修改：標題區域加入圖片 -->
+                <div class="flex items-center mb-2">
+                    <!-- 如果找不到圖片(onerror)，會自動隱藏，不會破圖 -->
+                    <img src="icon2.png" alt="Logo" class="w-12 h-12 mr-3 rounded-full border-2 border-white/20 shadow-sm object-cover bg-white" onerror="this.style.display='none'">
+                    <h1 class="text-4xl font-bold tracking-wide">釜山買買團</h1>
+                </div>
                 <p class="text-accent text-base font-bold mt-1">口袋滿滿出門，平平安安回家！</p>
             </div>
             <div class="bg-white/10 backdrop-blur-sm p-3 rounded-2xl text-center border border-white/10">
