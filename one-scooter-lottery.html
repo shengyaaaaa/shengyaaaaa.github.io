@@ -452,7 +452,7 @@
     </div>
 
     <footer class="text-center text-gray-400 text-xs pb-4 no-print">
-        &copy; 2023 宜雄國際ONE 管委會 | System Optimized by Gemini
+        &copy; 2025 宜雄國際ONE 管委會｜Anton Chen
     </footer>
 
     <script>
@@ -756,7 +756,7 @@
             state.seedStr = DOM.lotteryIdInput.value.trim();
             if (!state.seedStr) return showToast('請輸入抽籤編號', 'error');
 
-            // 1. 執行運算 (包含內定邏輯檢查)
+            // 1. 執行運算
             calculateLotteryResults(state.seedStr);
 
             // 2. 切換介面模式
@@ -857,8 +857,8 @@
             }));
 
             // 6. 處理剩餘/落選
-            // 注意：如果有內定，shuffled arrays 已經少了一組，所以這裡計算 unassigned 要小心
-            // 實際上 shuffledHouseholds 已經排除了內定戶，所以剩下的如果沒被用到 (i >= count)，就是落選
+            // 
+            // 
             let unassignedHouseholds = shuffledHouseholds.slice(count);
             let unassignedSpots = shuffledSpots.slice(count);
 
