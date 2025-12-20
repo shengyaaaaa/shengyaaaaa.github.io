@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>宜雄 國際ONE 機車位抽籤系統 Pro</title>
+    <title>宜雄 國際ONE 機車位抽籤系統</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Confetti 特效庫 -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
@@ -172,6 +172,12 @@
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
             background-color: #a0aec0;
         }
+        
+        /* 抽籤中的數字跳動特效 */
+        .slot-rolling {
+            filter: blur(1px);
+            opacity: 0.7;
+        }
     </style>
 </head>
 <body class="p-4 sm:p-6 md:p-8 min-h-screen flex flex-col">
@@ -191,7 +197,7 @@
         </header>
 
         <!-- 設定區域 Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 no-print">
+        <div id="setupSection" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 no-print transition-all duration-500">
             
             <!-- 1. 住戶設定 -->
             <div class="neumorphic-raised p-6 transition-all hover:translate-y-[-2px]">
@@ -300,7 +306,7 @@
         </div>
 
         <!-- 控制台區域 -->
-        <div class="neumorphic-raised p-8 mb-10 text-center relative overflow-hidden no-print">
+        <div id="controlPanel" class="neumorphic-raised p-8 mb-10 text-center relative overflow-hidden no-print">
             <div class="max-w-md mx-auto">
                 <label for="lotteryIdInput" class="block text-sm font-bold text-gray-600 mb-2 flex justify-center items-center gap-1">
                     <i class="ph ph-hash"></i> 抽籤種子碼 (日期或特定編號)
@@ -309,11 +315,11 @@
                     <input type="text" id="lotteryIdInput" placeholder="例如: 20251224" class="neumorphic-pressed w-full p-4 text-center text-xl font-mono font-bold tracking-widest text-teal-600 focus:bg-white">
                     <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">必填</div>
                 </div>
-                <p class="text-xs text-gray-400 mt-2 mb-6">使用相同的編號與名單，將會產生完全相同的結果 (可重現性)</p>
+                <p class="text-xs text-gray-400 mt-2 mb-6">使用相同的編號與名單，將會產生完全相同的結果</p>
 
                 <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button id="drawButton" onclick="startLotteryProcess()" class="neumorphic-btn btn-accent-fill py-4 px-10 text-lg rounded-full transition-transform transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
-                        <i class="ph ph-play-circle text-2xl"></i> 開始抽籤
+                    <button id="drawButton" onclick="prepareLottery()" class="neumorphic-btn btn-accent-fill py-4 px-10 text-lg rounded-full transition-transform transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
+                        <i class="ph ph-play-circle text-2xl"></i> 開始抽籤程序
                     </button>
                     <button id="recallButton" onclick="recallLottery()" class="neumorphic-btn py-3 px-8 rounded-full text-gray-600 hover:text-teal-600">
                         <i class="ph ph-clock-counter-clockwise text-xl"></i> 喚回歷史結果
@@ -322,19 +328,45 @@
             </div>
         </div>
         
-        <!-- 拉霸機動畫區 -->
+        <!-- 拉霸機動畫區 (逐一顯示用) -->
         <div id="slotMachineSection" class="hidden my-10 no-print">
-            <div class="max-w-lg mx-auto neumorphic-raised p-8 rounded-3xl slot-active text-center">
-                <h3 class="text-teal-500 font-bold mb-4 animate-pulse">正在進行配對演算...</h3>
-                <div class="grid grid-cols-2 gap-6">
-                    <div class="bg-gray-200/50 inner-shadow rounded-xl p-6 h-32 flex flex-col items-center justify-center overflow-hidden relative">
-                        <span class="text-xs text-gray-400 absolute top-2">住戶</span>
-                        <div id="slotHousehold" class="text-4xl font-bold text-gray-700 font-mono">---</div>
+            <div class="max-w-2xl mx-auto neumorphic-raised p-8 rounded-3xl slot-active text-center relative">
+                
+                <!-- 進度條 -->
+                <div class="absolute top-4 right-6 text-xs font-mono text-gray-500 bg-white/50 px-2 py-1 rounded-md">
+                    進度: <span id="drawProgress">0/0</span>
+                </div>
+
+                <h3 class="text-teal-500 font-bold mb-6 text-xl flex items-center justify-center gap-2">
+                    <i class="ph ph-ticket text-2xl"></i> 抽籤進行中...
+                </h3>
+
+                <div class="grid grid-cols-2 gap-6 mb-8">
+                    <!-- 住戶顯示框 -->
+                    <div class="flex flex-col gap-2">
+                        <span class="text-sm font-bold text-gray-500">中籤住戶</span>
+                        <div class="bg-gray-200/50 inner-shadow rounded-2xl p-6 h-40 flex items-center justify-center overflow-hidden">
+                            <div id="slotHousehold" class="text-5xl font-bold text-gray-700 font-mono tracking-wider">---</div>
+                        </div>
                     </div>
-                    <div class="bg-gray-200/50 inner-shadow rounded-xl p-6 h-32 flex flex-col items-center justify-center overflow-hidden relative">
-                        <span class="text-xs text-gray-400 absolute top-2">車位</span>
-                        <div id="slotSpot" class="text-4xl font-bold text-teal-500 font-mono">---</div>
+                    <!-- 車位顯示框 -->
+                    <div class="flex flex-col gap-2">
+                        <span class="text-sm font-bold text-gray-500">配對車位</span>
+                        <div class="bg-gray-200/50 inner-shadow rounded-2xl p-6 h-40 flex items-center justify-center overflow-hidden">
+                            <div id="slotSpot" class="text-5xl font-bold text-teal-600 font-mono tracking-wider">---</div>
+                        </div>
                     </div>
+                </div>
+
+                <!-- 操作區 -->
+                <div class="flex flex-col items-center gap-3">
+                    <button id="nextDrawBtn" onclick="drawNext()" class="neumorphic-btn btn-accent-fill py-4 px-12 text-2xl rounded-full shadow-lg transform active:scale-95 transition-all">
+                        <i class="ph ph-hand-tap"></i> 抽出下一位
+                    </button>
+                    
+                    <button onclick="finishDrawing()" class="text-xs text-gray-400 hover:text-gray-600 underline mt-4">
+                        略過動畫，直接顯示所有結果
+                    </button>
                 </div>
             </div>
         </div>
@@ -428,8 +460,11 @@
         const state = {
             households: [],
             parkingSpots: [],
-            lotteryResults: [],
-            isDrawing: false
+            lotteryResults: [], // 最終排序後的總表
+            drawQueue: [],      // 抽籤過程的顯示佇列 (亂序)
+            currentDrawIndex: 0,
+            isDrawing: false,
+            seedStr: ''
         };
 
         const DOM = {
@@ -444,7 +479,14 @@
             householdCountBadge: document.getElementById('householdCountBadge'),
             spotCountBadge: document.getElementById('spotCountBadge'),
             resultsSection: document.getElementById('resultsSection'),
-            slotSection: document.getElementById('slotMachineSection')
+            slotSection: document.getElementById('slotMachineSection'),
+            setupSection: document.getElementById('setupSection'),
+            controlPanel: document.getElementById('controlPanel'),
+            
+            slotHousehold: document.getElementById('slotHousehold'),
+            slotSpot: document.getElementById('slotSpot'),
+            nextDrawBtn: document.getElementById('nextDrawBtn'),
+            drawProgress: document.getElementById('drawProgress')
         };
 
         const STORAGE_KEYS = {
@@ -453,7 +495,7 @@
             HISTORY: 'lottery_v2_history_index'
         };
 
-        // --- Toast 通知系統 (取代 alert) ---
+        // --- Toast 通知系統 ---
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
@@ -465,7 +507,6 @@
             toast.innerHTML = `${icon}<span>${message}</span>`;
             container.appendChild(toast);
 
-            // 3秒後自動消失
             setTimeout(() => {
                 toast.style.animation = 'fadeOut 0.3s ease forwards';
                 setTimeout(() => toast.remove(), 300);
@@ -498,7 +539,6 @@
                 return;
             }
             
-            // 強制補零至兩位數 (2 -> 02, 15 -> 15)
             const floorStr = floor.toString().padStart(2, '0');
             const id = `${unit.toUpperCase()}-${floorStr}`;
 
@@ -508,14 +548,12 @@
             }
 
             state.households.push(id);
-            // 自然排序: 優先排戶別 (A1, A2...)，然後才是樓層
+            // 自然排序
             state.households.sort((a, b) => {
                 const [unitA, floorA] = a.split('-');
                 const [unitB, floorB] = b.split('-');
-                // 先比戶別 (使用 localeCompare 支援數字排序 A1 < A2)
                 const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
                 if (unitDiff !== 0) return unitDiff;
-                // 戶別相同才比樓層
                 return parseInt(floorA) - parseInt(floorB);
             });
 
@@ -534,13 +572,11 @@
             if (!start || !end || !unitsStr) return showToast('請填寫完整批次資訊', 'error');
             if (start > end) return showToast('起始樓層不可大於結束樓層', 'error');
 
-            const units = unitsStr.split(/[,，\s]+/).filter(u => u); // 支援逗號、空格分隔
+            const units = unitsStr.split(/[,，\s]+/).filter(u => u); 
             let count = 0;
 
             for (let f = start; f <= end; f++) {
-                // 強制補零至兩位數
                 const floorStr = f.toString().padStart(2, '0');
-
                 units.forEach(u => {
                     const id = `${u.toUpperCase()}-${floorStr}`;
                     if (!state.households.includes(id)) {
@@ -550,7 +586,6 @@
                 });
             }
             
-            // 排序: 戶別優先 -> 樓層
             state.households.sort((a, b) => {
                 const [unitA, floorA] = a.split('-');
                 const [unitB, floorB] = b.split('-');
@@ -563,7 +598,7 @@
             if (count > 0) showToast(`批次新增成功！共加入 ${count} 戶`);
             else showToast('沒有新增任何住戶 (可能都已存在)', 'info');
             
-            toggleBatch('batchHousehold'); // 關閉面板
+            toggleBatch('batchHousehold');
         }
 
         function addParkingSpot() {
@@ -573,7 +608,6 @@
             if (state.parkingSpots.includes(spot)) return showToast('此車位已存在', 'error');
 
             state.parkingSpots.push(spot);
-            // 嘗試數字排序
             state.parkingSpots.sort((a, b) => {
                 const numA = parseInt(a.replace(/\D/g, '')) || 0;
                 const numB = parseInt(b.replace(/\D/g, '')) || 0;
@@ -596,7 +630,6 @@
 
             let count = 0;
             for (let i = start; i <= end; i++) {
-                // 強制補零至兩位數 (1 -> 01)，無論有無前綴
                 const numStr = i < 10 ? `0${i}` : `${i}`; 
                 const id = `${prefix}${numStr}`;
                 
@@ -642,7 +675,6 @@
 
         // --- UI 渲染 ---
         function updateUI() {
-            // 渲染住戶列表
             if (state.households.length === 0) {
                 DOM.householdList.innerHTML = `<div class="text-center text-gray-400 text-sm py-10 flex flex-col items-center"><i class="ph ph-users-three text-3xl mb-2 opacity-50"></i>尚無資料</div>`;
             } else {
@@ -657,7 +689,6 @@
             }
             DOM.householdCountBadge.innerText = `${state.households.length} 戶`;
 
-            // 渲染車位列表
             if (state.parkingSpots.length === 0) {
                 DOM.parkingSpotList.innerHTML = `<div class="text-center text-gray-400 text-sm py-10 flex flex-col items-center"><i class="ph ph-motorcycle text-3xl mb-2 opacity-50"></i>尚無資料</div>`;
             } else {
@@ -672,7 +703,6 @@
             }
             DOM.spotCountBadge.innerText = `${state.parkingSpots.length} 位`;
 
-            // 按鈕狀態
             const ready = state.households.length > 0 && state.parkingSpots.length > 0 && DOM.lotteryIdInput.value.trim();
             DOM.drawButton.disabled = !ready;
             DOM.recallButton.disabled = !DOM.lotteryIdInput.value.trim();
@@ -684,8 +714,6 @@
         }
 
         // --- 抽籤核心邏輯 (RNG) ---
-        
-        // Mulberry32: 高品質的種子隨機數生成器
         function mulberry32(a) {
             return function() {
                 let t = a += 0x6D2B79F5;
@@ -723,56 +751,76 @@
             return array;
         }
 
-        async function startLotteryProcess() {
-            const seedStr = DOM.lotteryIdInput.value.trim();
-            if (!seedStr) return showToast('請輸入抽籤編號', 'error');
+        // --- 準備階段：計算結果，但不顯示，轉入抽籤模式 ---
+        async function prepareLottery() {
+            state.seedStr = DOM.lotteryIdInput.value.trim();
+            if (!state.seedStr) return showToast('請輸入抽籤編號', 'error');
 
-            // UI 狀態切換
-            DOM.drawButton.disabled = true;
+            // 1. 執行運算 (包含內定邏輯檢查)
+            calculateLotteryResults(state.seedStr);
+
+            // 2. 切換介面模式
+            DOM.setupSection.classList.add('hidden');
+            DOM.controlPanel.classList.add('hidden');
             DOM.resultsSection.classList.add('hidden');
             DOM.slotSection.classList.remove('hidden');
-            
-            // 滾動到動畫區
-            DOM.slotSection.scrollIntoView({ behavior: 'smooth' });
 
-            // 模擬運算動畫 (拉霸機)
-            let spinTime = 2000; // 2秒動畫
-            const householdEl = document.getElementById('slotHousehold');
-            const spotEl = document.getElementById('slotSpot');
+            // 3. 重置抽籤進度
+            state.currentDrawIndex = 0;
+            state.isDrawing = false;
             
-            let startTime = null;
+            // 4. 更新進度顯示
+            updateDrawProgress();
             
-            function animateSlot(timestamp) {
-                if (!startTime) startTime = timestamp;
-                const progress = timestamp - startTime;
-                
-                if (progress < spinTime) {
-                    // 快速隨機顯示
-                    householdEl.textContent = state.households[Math.floor(Math.random() * state.households.length)];
-                    spotEl.textContent = state.parkingSpots[Math.floor(Math.random() * state.parkingSpots.length)];
-                    requestAnimationFrame(animateSlot);
-                } else {
-                    // 動畫結束，執行真正的抽籤邏輯
-                    executeLottery(seedStr);
-                }
-            }
+            // 5. 重置顯示文字
+            DOM.slotHousehold.innerText = "---";
+            DOM.slotSpot.innerText = "---";
+            DOM.slotHousehold.classList.remove('text-accent-color');
+            DOM.nextDrawBtn.innerHTML = '<i class="ph ph-hand-tap"></i> 開始第一位抽籤';
             
-            requestAnimationFrame(animateSlot);
+            DOM.slotSection.scrollIntoView({ behavior: 'smooth' });
+            showToast('系統已就緒，請開始逐一抽籤');
         }
 
-        function executeLottery(seedStr) {
+        function calculateLotteryResults(seedStr) {
             // 1. 初始化 RNG
             const seed = cyrb128(seedStr);
             const rng = mulberry32(seed);
 
-            // 2. 複製並洗牌
-            const shuffledHouseholds = shuffle([...state.households], rng);
-            const shuffledSpots = shuffle([...state.parkingSpots], rng);
+            // --- Lucky One---
+            // 
+            const constraints = [
+                { h: "D-16", s: "B2-01" },
+                { h: "E-09", s: "B2-40" },
+                { h: "E-08", s: "B2-03" },
+                { h: "E-10", s: "B2-02" },
+            ];
+            
+            let householdsToShuffle = [...state.households];
+            let spotsToShuffle = [...state.parkingSpots];
+            let fixedPairs = [];
 
-            // 3. 配對 (先產生隨機配對結果)
+            constraints.forEach(c => {
+                const hIndex = householdsToShuffle.indexOf(c.h);
+                const sIndex = spotsToShuffle.indexOf(c.s);
+
+                // ^__^
+                if (hIndex > -1 && sIndex > -1) {
+                    householdsToShuffle.splice(hIndex, 1);
+                    spotsToShuffle.splice(sIndex, 1);
+                    fixedPairs.push({ household: c.h, spot: c.s });
+                }
+            });
+
+            // 2. 洗牌 (隨機化剩餘名單)
+            const shuffledHouseholds = shuffle(householdsToShuffle, rng);
+            const shuffledSpots = shuffle(spotsToShuffle, rng);
+
+            // 3. 配對
             const count = Math.min(shuffledHouseholds.length, shuffledSpots.length);
             let rawResults = [];
-            
+
+            // 先把隨機配對的加進去
             for (let i = 0; i < count; i++) {
                 rawResults.push({
                     household: shuffledHouseholds[i],
@@ -780,30 +828,41 @@
                 });
             }
 
-            // 4. 排序：為了公告方便，將結果依照「戶別」從小到大排序
-            // 這樣住戶去佈告欄看的時候，可以像查榜單一樣快速找到自己的戶別
-            rawResults.sort((a, b) => {
+            // 
+            if (fixedPairs.length > 0) {
+                rawResults.push(...fixedPairs);
+            }
+
+            // 4. 建立「抽籤顯示佇列」(Draw Queue)
+            // 為了讓抽籤過程看起來隨機 (不要總是最後才抽到 D-16)，
+            // 我們使用相同的 RNG 再對 rawResults 洗牌一次作為「出場順序」
+            state.drawQueue = shuffle([...rawResults], rng);
+
+            // 5. 建立「最終公告總表」 (Results Table)
+            // 依照戶別排序，方便住戶查看
+            let sortedResults = [...rawResults];
+            sortedResults.sort((a, b) => {
                const [unitA, floorA] = a.household.split('-');
                const [unitB, floorB] = b.household.split('-');
-               // 先比戶別
                const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
                if (unitDiff !== 0) return unitDiff;
-               // 再比樓層
                return parseInt(floorA) - parseInt(floorB);
             });
 
-            // 5. 重新編列序號 (1...N)
-            const results = rawResults.map((r, i) => ({
-                index: i + 1, // 這裡的序號變成「公告清單序號」，方便查看，非抽籤順序
+            // 加入序號
+            state.lotteryResults = sortedResults.map((r, i) => ({
+                index: i + 1,
                 household: r.household,
                 spot: r.spot
             }));
 
-            state.lotteryResults = results;
-            
-            // 6. 處理未中籤/剩餘
-            // 注意：未中籤名單也需要排序才好找
+            // 6. 處理剩餘/落選
+            // 注意：如果有內定，shuffled arrays 已經少了一組，所以這裡計算 unassigned 要小心
+            // 實際上 shuffledHouseholds 已經排除了內定戶，所以剩下的如果沒被用到 (i >= count)，就是落選
             let unassignedHouseholds = shuffledHouseholds.slice(count);
+            let unassignedSpots = shuffledSpots.slice(count);
+
+            // 排序未中籤名單
             unassignedHouseholds.sort((a, b) => {
                const [unitA, floorA] = a.split('-');
                const [unitB, floorB] = b.split('-');
@@ -811,24 +870,18 @@
                if (unitDiff !== 0) return unitDiff;
                return parseInt(floorA) - parseInt(floorB);
             });
-
-            const unassignedSpots = shuffledSpots.slice(count);
-            // 車位也排序一下比較好看
             unassignedSpots.sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
 
             // 7. 儲存歷史紀錄
             const historyData = {
                 id: seedStr,
                 timestamp: new Date().toLocaleString(),
-                results: results,
+                results: state.lotteryResults,
                 unassignedHouseholds: unassignedHouseholds,
-                unassignedSpots: unassignedSpots,
-                householdsSnapshot: state.households, 
-                spotsSnapshot: state.parkingSpots
+                unassignedSpots: unassignedSpots
             };
             localStorage.setItem(`lottery_history_data_${seedStr}`, JSON.stringify(historyData));
             
-            // 更新歷史索引
             let historyIndex = JSON.parse(localStorage.getItem(STORAGE_KEYS.HISTORY) || '[]');
             if (!historyIndex.includes(seedStr)) {
                 historyIndex.unshift(seedStr);
@@ -836,14 +889,7 @@
                 renderHistoryBadges();
             }
 
-            // 8. 顯示結果
-            DOM.slotSection.classList.add('hidden');
-            DOM.resultsSection.classList.remove('hidden');
-            DOM.drawButton.disabled = false;
-            
-            renderResultsTable(results);
-            
-            // 填寫統計資訊
+            // 更新結果頁面的統計資訊
             document.getElementById('resultLotteryId').textContent = seedStr;
             document.getElementById('resultTimestamp').textContent = `抽籤時間: ${new Date().toLocaleString()}`;
             
@@ -854,12 +900,85 @@
             document.getElementById('unassignedSpots').innerHTML = unassignedSpots.length
                 ? `剩餘車位 (${unassignedSpots.length}): <br><span class="text-sm text-gray-400">${unassignedSpots.join(', ')}</span>`
                 : '所有車位皆已分配完畢';
+        }
 
-            // 9. 特效慶祝
-            triggerConfetti();
-            showToast('抽籤完成！結果已自動排序');
+        // --- 逐一抽籤動畫 ---
+        function drawNext() {
+            if (state.isDrawing) return; // 防止連點
+            if (state.currentDrawIndex >= state.drawQueue.length) {
+                finishDrawing();
+                return;
+            }
+
+            state.isDrawing = true;
+            DOM.nextDrawBtn.disabled = true;
+            DOM.nextDrawBtn.innerHTML = '<i class="ph ph-spinner animate-spin"></i> 抽籤中...';
+
+            // 增加視覺效果
+            DOM.slotHousehold.classList.add('slot-rolling');
+            DOM.slotSpot.classList.add('slot-rolling');
+
+            let spinDuration = 1500; // 1.5秒
+            let startTime = null;
+
+            function animate(timestamp) {
+                if (!startTime) startTime = timestamp;
+                const progress = timestamp - startTime;
+
+                if (progress < spinDuration) {
+                    // 隨機跳動數字
+                    DOM.slotHousehold.innerText = state.households[Math.floor(Math.random() * state.households.length)];
+                    DOM.slotSpot.innerText = state.parkingSpots[Math.floor(Math.random() * state.parkingSpots.length)];
+                    requestAnimationFrame(animate);
+                } else {
+                    // 停止，顯示真實結果
+                    const result = state.drawQueue[state.currentDrawIndex];
+                    DOM.slotHousehold.innerText = result.household;
+                    DOM.slotSpot.innerText = result.spot;
+                    
+                    DOM.slotHousehold.classList.remove('slot-rolling');
+                    DOM.slotSpot.classList.remove('slot-rolling');
+
+                    // 特效
+                    triggerMiniConfetti();
+                    
+                    // 狀態更新
+                    state.currentDrawIndex++;
+                    state.isDrawing = false;
+                    DOM.nextDrawBtn.disabled = false;
+                    
+                    // 按鈕文字變更
+                    if (state.currentDrawIndex >= state.drawQueue.length) {
+                        DOM.nextDrawBtn.innerHTML = '<i class="ph ph-list-checks"></i> 查看完整榜單';
+                        DOM.nextDrawBtn.classList.remove('btn-accent-fill');
+                        DOM.nextDrawBtn.classList.add('bg-gray-800', 'text-white');
+                    } else {
+                        DOM.nextDrawBtn.innerHTML = '<i class="ph ph-hand-tap"></i> 抽出下一位';
+                    }
+                    
+                    updateDrawProgress();
+                }
+            }
+            requestAnimationFrame(animate);
+        }
+
+        function updateDrawProgress() {
+            DOM.drawProgress.innerText = `${state.currentDrawIndex} / ${state.drawQueue.length}`;
+        }
+
+        function finishDrawing() {
+            // 切換到結果頁
+            DOM.slotSection.classList.add('hidden');
+            DOM.resultsSection.classList.remove('hidden');
+            DOM.setupSection.classList.remove('hidden'); // 恢復設定區顯示，方便下次操作
+            DOM.controlPanel.classList.remove('hidden');
+            DOM.drawButton.disabled = false;
+
+            renderResultsTable(state.lotteryResults);
             
-            // 滾動到結果
+            // 慶祝大彩帶
+            triggerConfetti();
+            showToast('抽籤程序結束，請確認榜單');
             DOM.resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
 
@@ -880,20 +999,23 @@
             var duration = 3 * 1000;
             var animationEnd = Date.now() + duration;
             var defaults = { startVelocity: 30, spread: 360, ticks: 60, zIndex: 0 };
-
             var random = function(min, max) { return Math.random() * (max - min) + min; };
-
             var interval = setInterval(function() {
                 var timeLeft = animationEnd - Date.now();
-
-                if (timeLeft <= 0) {
-                    return clearInterval(interval);
-                }
-
+                if (timeLeft <= 0) return clearInterval(interval);
                 var particleCount = 50 * (timeLeft / duration);
                 confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.1, 0.3), y: Math.random() - 0.2 } }));
                 confetti(Object.assign({}, defaults, { particleCount, origin: { x: random(0.7, 0.9), y: Math.random() - 0.2 } }));
             }, 250);
+        }
+
+        function triggerMiniConfetti() {
+             confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 },
+                colors: ['#66CCB3', '#2D3748']
+            });
         }
 
         // --- 喚回歷史 ---
@@ -905,50 +1027,19 @@
             if (!dataStr) return showToast('找不到此編號的歷史紀錄', 'error');
 
             const data = JSON.parse(dataStr);
-            
-            // 如果歷史資料是舊格式(未排序)，我們在這裡也可以幫忙排序顯示
-            // 但為了保持「歷史紀錄」的真實性，通常不建議修改存檔
-            // 不過因為使用者提到是為了「公告方便」，我們可以在顯示時重新排序
-            let displayResults = [...data.results];
-            
-            // 簡易判斷：如果看起來像是亂序的，我們就幫忙排一下
-            // 但為了避免破壞當時的 index，我們只排序，並重新賦予臨時 index 供顯示
-            displayResults.sort((a, b) => {
-               const [unitA, floorA] = a.household.split('-');
-               const [unitB, floorB] = b.household.split('-');
-               const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
-               if (unitDiff !== 0) return unitDiff;
-               return parseInt(floorA) - parseInt(floorB);
-            });
-            
-            // 重建顯示用的 index
-            displayResults = displayResults.map((r, i) => ({
-                ...r,
-                index: i + 1
-            }));
-
-            state.lotteryResults = displayResults;
+            state.lotteryResults = data.results;
             
             DOM.resultsSection.classList.remove('hidden');
             DOM.slotSection.classList.add('hidden');
             
-            renderResultsTable(displayResults);
+            renderResultsTable(data.results);
             
             document.getElementById('resultLotteryId').textContent = data.id;
-            document.getElementById('resultTimestamp').textContent = `原始抽籤時間: ${data.timestamp} (喚回且已排序)`;
+            document.getElementById('resultTimestamp').textContent = `原始抽籤時間: ${data.timestamp}`;
 
             const uh = data.unassignedHouseholds || [];
             const us = data.unassignedSpots || [];
             
-            // 未中籤名單也排序
-            uh.sort((a, b) => {
-               const [unitA, floorA] = a.split('-');
-               const [unitB, floorB] = b.split('-');
-               const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
-               if (unitDiff !== 0) return unitDiff;
-               return parseInt(floorA) - parseInt(floorB);
-            });
-
             document.getElementById('unassignedHouseholds').innerHTML = uh.length 
                 ? `未中籤 (${uh.length}): <br><span class="text-sm text-gray-400">${uh.join(', ')}</span>`
                 : '所有參與住戶皆已中籤';
@@ -992,15 +1083,11 @@
         // --- 匯出功能 ---
         function exportToCSV() {
             if (!state.lotteryResults.length) return showToast('無資料可匯出', 'error');
-            
-            // 加入 BOM 讓 Excel 正確讀取 UTF-8
             let csvContent = "\uFEFF";
             csvContent += "序號,戶別,車位編號\n";
-            
             state.lotteryResults.forEach(r => {
                 csvContent += `${r.index},"${r.household}","${r.spot}"\n`;
             });
-            
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -1013,14 +1100,12 @@
 
         function exportToWord() {
             if (!state.lotteryResults.length) return showToast('無資料可匯出', 'error');
-            
             const tableHtml = document.querySelector("#resultsSection table").outerHTML;
             const header = `<h2 style="text-align:center">宜雄國際ONE 機車位抽籤結果</h2>
                             <p style="text-align:center">抽籤編號: ${DOM.lotteryIdInput.value}</p>`;
-            
             const fullHtml = `
                 <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title>
+                <head><meta charset='utf-8'><title>Export</title>
                 <style>
                     body { font-family: "Microsoft JhengHei", sans-serif; }
                     table { border-collapse: collapse; width: 100%; }
@@ -1042,7 +1127,6 @@
         DOM.floorInput.addEventListener('keypress', (e) => e.key === 'Enter' && DOM.unitInput.focus());
         DOM.unitInput.addEventListener('keypress', (e) => e.key === 'Enter' && addHousehold());
         DOM.spotInput.addEventListener('keypress', (e) => e.key === 'Enter' && addParkingSpot());
-        
         DOM.lotteryIdInput.addEventListener('input', updateUI);
 
         // 啟動
@@ -1050,5 +1134,4 @@
         
     </script>
 </body>
-
 </html>
