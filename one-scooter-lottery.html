@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-Hant" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -156,6 +156,9 @@
             #resultsSection { display: block !important; box-shadow: none; }
             table { width: 100%; border-collapse: collapse; }
             th, td { border: 1px solid #000; padding: 8px; }
+            /* 隱藏歡迎頁 */
+            #welcome-screen { display: none !important; }
+            #main-app-container { padding-top: 0 !important; }
         }
 
         /* 自訂滾動條 */
@@ -180,282 +183,340 @@
         }
     </style>
 </head>
-<body class="p-4 sm:p-6 md:p-8 min-h-screen flex flex-col">
+<body class="flex flex-col">
 
     <div id="toast-container"></div>
 
-    <div class="max-w-6xl mx-auto w-full neumorphic-raised p-6 md:p-10 mb-10 relative overflow-hidden">
-        <!-- 裝飾背景 -->
-        <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 rounded-full bg-gradient-to-br from-transparent to-gray-200 opacity-20 pointer-events-none"></div>
-        
-        <header class="text-center mb-10 relative z-10">
-            <div class="inline-flex items-center justify-center w-16 h-16 rounded-full neumorphic-raised mb-4 text-teal-500">
-                <i class="ph ph-moped text-3xl"></i>
-            </div>
-            <h1 class="text-3xl sm:text-4xl font-bold text-gray-700 tracking-tight">宜雄 國際ONE <span class="text-teal-500">機車位抽籤</span></h1>
-            <p class="text-gray-500 mt-2 text-sm font-medium">電腦隨機分配，抽籤結果將依照戶別排序</p>
-        </header>
+    <!-- 1. 歡迎/公告首頁 (Hero Section) -->
+    <div id="welcome-screen" class="min-h-screen flex flex-col items-center justify-center p-6 relative overflow-hidden no-print">
+        <!-- 背景裝飾 -->
+        <div class="absolute top-20 left-20 w-64 h-64 rounded-full bg-teal-100 opacity-20 blur-3xl pointer-events-none"></div>
+        <div class="absolute bottom-20 right-20 w-80 h-80 rounded-full bg-blue-100 opacity-30 blur-3xl pointer-events-none"></div>
 
-        <!-- 設定區域 Grid -->
-        <div id="setupSection" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 no-print transition-all duration-500">
+        <div class="max-w-5xl w-full text-center z-10">
+            <div class="inline-flex items-center justify-center w-24 h-24 rounded-full neumorphic-raised mb-8 text-teal-500 animate-bounce">
+                <i class="ph ph-moped text-5xl"></i>
+            </div>
             
-            <!-- 1. 住戶設定 -->
-            <div class="neumorphic-raised p-6 transition-all hover:translate-y-[-2px]">
-                <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
-                    <h2 class="text-lg font-bold flex items-center gap-2 text-gray-700">
-                        <i class="ph ph-house-line text-xl text-teal-500"></i> 參與住戶名單
-                    </h2>
-                    <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-mono" id="householdCountBadge">0 戶</span>
-                </div>
+            <h1 class="text-4xl md:text-6xl font-black text-gray-700 tracking-tight mb-4">
+                宜雄 國際ONE
+            </h1>
+            <h2 class="text-3xl md:text-5xl font-bold text-teal-600 mb-12">
+                機車位抽籤大會
+            </h2>
 
-                <!-- 單筆新增 -->
-                <div class="flex gap-3 mb-5">
-                    <input type="text" id="floorInput" placeholder="樓層" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
-                    <input type="text" id="unitInput" placeholder="戶別" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
-                    <button onclick="addHousehold()" class="neumorphic-btn btn-primary w-1/3 hover:text-teal-600">
-                        <i class="ph ph-plus-bold"></i> 新增
-                    </button>
-                </div>
-
-                <!-- 批次新增摺疊面板 -->
-                <div class="mb-4">
-                    <button onclick="toggleBatch('batchHousehold')" class="text-xs text-gray-500 flex items-center gap-1 hover:text-teal-600 transition-colors ml-1 mb-2">
-                        <i class="ph ph-caret-down"></i> 展開批次新增工具
-                    </button>
-                    <div id="batchHousehold" class="hidden bg-gray-100/50 rounded-xl p-4 border border-gray-200/50">
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <input type="number" id="startFloor" placeholder="起始樓層 (例:2)" class="neumorphic-pressed p-2 text-sm">
-                            <input type="number" id="endFloor" placeholder="結束樓層 (例:15)" class="neumorphic-pressed p-2 text-sm">
-                        </div>
-                        <input type="text" id="units" placeholder="戶別 (例: A1, A2, A3)" class="neumorphic-pressed w-full p-2 text-sm mb-3">
-                        <button onclick="batchAddHouseholds()" class="neumorphic-btn w-full text-sm py-2">
-                            <i class="ph ph-copy"></i> 批次生成
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 列表 -->
-                <div class="bg-gray-100/30 rounded-xl p-2 min-h-[150px]">
-                    <div id="householdList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                        <!-- JS 渲染內容 -->
-                        <div class="text-center text-gray-400 text-sm py-10 flex flex-col items-center">
-                            <i class="ph ph-users-three text-3xl mb-2 opacity-50"></i>
-                            尚無資料
-                        </div>
-                    </div>
-                </div>
-                
-                <div class="flex justify-end mt-4">
-                    <button onclick="removeAllHouseholds()" class="neumorphic-btn btn-danger text-xs px-3 py-2 hover:bg-red-50">
-                        <i class="ph ph-trash"></i> 清空列表
-                    </button>
-                </div>
-            </div>
-
-            <!-- 2. 車位設定 -->
-            <div class="neumorphic-raised p-6 transition-all hover:translate-y-[-2px]">
-                <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
-                    <h2 class="text-lg font-bold flex items-center gap-2 text-gray-700">
-                        <i class="ph ph-parking text-xl text-teal-500"></i> 抽籤車位清單
-                    </h2>
-                    <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-mono" id="spotCountBadge">0 位</span>
-                </div>
-
-                <!-- 單筆新增 -->
-                <div class="flex gap-3 mb-5">
-                    <input type="text" id="spotInput" placeholder="車位號碼" class="neumorphic-pressed w-2/3 p-3 text-center font-mono uppercase focus:bg-white">
-                    <button onclick="addParkingSpot()" class="neumorphic-btn btn-primary w-1/3 hover:text-teal-600">
-                        <i class="ph ph-plus-bold"></i> 新增
-                    </button>
-                </div>
-
-                 <!-- 批次新增摺疊面板 -->
-                 <div class="mb-4">
-                    <button onclick="toggleBatch('batchSpot')" class="text-xs text-gray-500 flex items-center gap-1 hover:text-teal-600 transition-colors ml-1 mb-2">
-                        <i class="ph ph-caret-down"></i> 展開批次新增工具
-                    </button>
-                    <div id="batchSpot" class="hidden bg-gray-100/50 rounded-xl p-4 border border-gray-200/50">
-                        <input type="text" id="spotPrefix" placeholder="前綴 (選填，例: B1-)" class="neumorphic-pressed w-full p-2 text-sm mb-3">
-                        <div class="grid grid-cols-2 gap-3 mb-3">
-                            <input type="number" id="startSpot" placeholder="起始 (例:1)" class="neumorphic-pressed p-2 text-sm">
-                            <input type="number" id="endSpot" placeholder="結束 (例:50)" class="neumorphic-pressed p-2 text-sm">
-                        </div>
-                        <button onclick="batchAddParkingSpots()" class="neumorphic-btn w-full text-sm py-2">
-                            <i class="ph ph-copy"></i> 批次生成
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 列表 -->
-                <div class="bg-gray-100/30 rounded-xl p-2 min-h-[150px]">
-                    <div id="parkingSpotList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
-                         <!-- JS 渲染內容 -->
-                         <div class="text-center text-gray-400 text-sm py-10 flex flex-col items-center">
-                            <i class="ph ph-motorcycle text-3xl mb-2 opacity-50"></i>
-                            尚無資料
-                        </div>
-                    </div>
-                </div>
-
-                <div class="flex justify-end mt-4">
-                    <button onclick="removeAllParkingSpots()" class="neumorphic-btn btn-danger text-xs px-3 py-2 hover:bg-red-50">
-                        <i class="ph ph-trash"></i> 清空列表
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 控制台區域 -->
-        <div id="controlPanel" class="neumorphic-raised p-8 mb-10 text-center relative overflow-hidden no-print">
-            <div class="max-w-md mx-auto">
-                <label for="lotteryIdInput" class="block text-sm font-bold text-gray-600 mb-2 flex justify-center items-center gap-1">
-                    <i class="ph ph-hash"></i> 抽籤種子碼 (日期或特定編號)
-                </label>
-                <div class="relative">
-                    <input type="text" id="lotteryIdInput" placeholder="例如: 20251224" class="neumorphic-pressed w-full p-4 text-center text-xl font-mono font-bold tracking-widest text-teal-600 focus:bg-white">
-                    <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">必填</div>
-                </div>
-                <p class="text-xs text-gray-400 mt-2 mb-6">使用相同的編號與名單，將會產生完全相同的結果</p>
-
-                <div class="flex flex-col sm:flex-row justify-center gap-4">
-                    <button id="drawButton" onclick="prepareLottery()" class="neumorphic-btn btn-accent-fill py-4 px-10 text-lg rounded-full transition-transform transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
-                        <i class="ph ph-play-circle text-2xl"></i> 開始抽籤
-                    </button>
-                    <button id="recallButton" onclick="recallLottery()" class="neumorphic-btn py-3 px-8 rounded-full text-gray-600 hover:text-teal-600">
-                        <i class="ph ph-clock-counter-clockwise text-xl"></i> 喚回歷史結果
-                    </button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- 拉霸機動畫區 (逐一顯示用) -->
-        <div id="slotMachineSection" class="hidden my-10 no-print">
-            <div class="max-w-2xl mx-auto neumorphic-raised p-8 rounded-3xl slot-active text-center relative">
-                
-                <!-- 進度條 -->
-                <div class="absolute top-4 right-6 text-xs font-mono text-gray-500 bg-white/50 px-2 py-1 rounded-md">
-                    進度: <span id="drawProgress">0/0</span>
-                </div>
-
-                <h3 class="text-teal-500 font-bold mb-6 text-xl flex items-center justify-center gap-2">
-                    <i class="ph ph-ticket text-2xl"></i> 抽籤進行中...
+            <!-- 公告板 (字體加大版) -->
+            <div class="neumorphic-raised p-8 md:p-14 mb-12 text-left bg-white/50 backdrop-blur-sm">
+                <h3 class="text-3xl font-bold text-gray-800 mb-8 flex items-center gap-3 border-b border-gray-300 pb-4">
+                    <i class="ph ph-info text-teal-600"></i> 注意事項
                 </h3>
-
-                <div class="grid grid-cols-2 gap-6 mb-8">
-                    <!-- 住戶顯示框 -->
-                    <div class="flex flex-col gap-2">
-                        <span class="text-sm font-bold text-gray-500">中籤住戶</span>
-                        <div class="bg-gray-200/50 inner-shadow rounded-2xl p-6 h-40 flex items-center justify-center overflow-hidden">
-                            <div id="slotHousehold" class="text-5xl font-bold text-gray-700 font-mono tracking-wider">---</div>
-                        </div>
-                    </div>
-                    <!-- 車位顯示框 -->
-                    <div class="flex flex-col gap-2">
-                        <span class="text-sm font-bold text-gray-500">配對車位</span>
-                        <div class="bg-gray-200/50 inner-shadow rounded-2xl p-6 h-40 flex items-center justify-center overflow-hidden">
-                            <div id="slotSpot" class="text-5xl font-bold text-teal-600 font-mono tracking-wider">---</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- 操作區 -->
-                <div class="flex flex-col items-center gap-3">
-                    <button id="nextDrawBtn" onclick="drawNext()" class="neumorphic-btn btn-accent-fill py-4 px-12 text-2xl rounded-full shadow-lg transform active:scale-95 transition-all">
-                        <i class="ph ph-hand-tap"></i> 抽出下一位
-                    </button>
-                    
-                    <button onclick="finishDrawing()" class="text-xs text-gray-400 hover:text-gray-600 underline mt-4">
-                        略過動畫，直接顯示所有結果
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 結果顯示區 -->
-        <div id="resultsSection" class="hidden neumorphic-raised p-8 bg-white md:bg-transparent">
-            <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4">
-                <div class="text-center md:text-left">
-                    <h2 class="text-2xl font-bold text-gray-800">抽籤結果公告</h2>
-                    <p class="text-gray-500 text-sm mt-1">抽籤編號: <span id="resultLotteryId" class="font-mono font-bold text-teal-600"></span></p>
-                    <p class="text-gray-400 text-xs" id="resultTimestamp"></p>
-                </div>
-                <div class="flex gap-2 mt-4 md:mt-0 no-print">
-                    <button onclick="exportToCSV()" class="neumorphic-btn text-sm px-4 py-2 hover:text-green-600">
-                        <i class="ph ph-file-csv text-lg"></i> 匯出 CSV
-                    </button>
-                    <button onclick="exportToWord()" class="neumorphic-btn text-sm px-4 py-2 hover:text-blue-600">
-                        <i class="ph ph-microsoft-word-logo text-lg"></i> 匯出 Word
-                    </button>
-                    <button onclick="window.print()" class="neumorphic-btn text-sm px-4 py-2 hover:text-gray-800">
-                        <i class="ph ph-printer text-lg"></i> 列印
-                    </button>
-                </div>
+                <ul class="space-y-6 text-gray-700 text-xl md:text-2xl font-semibold leading-relaxed">
+                    <li class="flex items-start gap-4">
+                        <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
+                        <span>本系統採電腦隨機亂數配對，<strong>抽籤結果將依照戶別排序</strong>。</span>
+                    </li>
+                    <li class="flex items-start gap-4">
+                        <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
+                        <span>抽籤結果將採<strong>逐一唱名</strong>方式進行，請住戶留意</span>
+                    </li>
+                    <li class="flex items-start gap-4">
+                        <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
+                        <span>因部分機車位緊鄰汽車停車位，考量實際停放安全及避免日後刮車爭議，本次機車位抽籤將<strong>不納入</strong>下述位置：</span>
+                    </li>
+                    <li class="flex items-start gap-4">
+                        <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
+                        <span><strong>B2-47、B2-57</span>
+                    </li>
+                </ul>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="min-w-full border-collapse">
-                    <thead>
-                        <tr class="bg-gray-100 text-gray-600 text-sm uppercase leading-normal">
-                            <th class="py-3 px-6 text-left rounded-l-lg">序號</th>
-                            <th class="py-3 px-6 text-left">戶別</th>
-                            <th class="py-3 px-6 text-left rounded-r-lg">車位編號</th>
-                        </tr>
-                    </thead>
-                    <tbody id="resultsTableBody" class="text-gray-600 text-sm font-light">
-                        <!-- JS 填入 -->
-                    </tbody>
-                </table>
-            </div>
-
-             <div id="unassignedInfo" class="mt-8 p-4 bg-gray-100/50 rounded-xl text-center border border-gray-200">
-                <h4 class="font-bold text-gray-500 mb-2 text-sm">配對統計</h4>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <p id="unassignedHouseholds" class="text-orange-500 font-medium"></p>
-                    <p id="unassignedSpots" class="text-blue-500 font-medium"></p>
-                </div>
-            </div>
-            
-            <!-- 頁尾簽名區 (僅列印時顯示) -->
-            <div class="hidden print:flex justify-between mt-20 pt-10 border-t border-gray-300">
-                <div class="text-center">
-                    <p class="mb-12">管理委員會主任委員</p>
-                    <p class="border-t border-black w-40 mx-auto"></p>
-                </div>
-                <div class="text-center">
-                    <p class="mb-12">監察委員/見證人</p>
-                    <p class="border-t border-black w-40 mx-auto"></p>
-                </div>
-                <div class="text-center">
-                    <p class="mb-12">經辦人員</p>
-                    <p class="border-t border-black w-40 mx-auto"></p>
-                </div>
-            </div>
-        </div>
-
-        <!-- 歷史紀錄與重設 -->
-        <div class="mt-10 pt-6 border-t border-gray-300 no-print">
-            <div id="historySection" class="mb-6">
-                <h3 class="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
-                    <i class="ph ph-clock-history"></i> 最近紀錄
-                </h3>
-                <div id="historyList" class="flex flex-wrap gap-2">
-                    <span class="text-xs text-gray-400">無歷史紀錄</span>
-                </div>
-            </div>
-            
-            <div class="text-center">
-                <button onclick="masterReset()" class="text-xs text-red-400 hover:text-red-600 underline transition-colors">
-                    重設所有系統資料 (清除快取)
-                </button>
-            </div>
+            <button onclick="scrollToMain()" class="neumorphic-btn btn-accent-fill py-5 px-16 text-2xl rounded-full shadow-lg transform hover:scale-105 transition-all">
+                <i class="ph ph-caret-down text-3xl"></i> 進入設定與抽籤系統
+            </button>
         </div>
     </div>
 
-    <footer class="text-center text-gray-400 text-xs pb-4 no-print">
-        &copy; 2025 宜雄國際ONE 管委會｜Anton Chen
-    </footer>
+    <!-- 2. 主程式區域 -->
+    <div id="main-app-container" class="min-h-screen py-10 px-4 sm:px-6 md:px-8 flex flex-col">
+        <div class="max-w-6xl mx-auto w-full neumorphic-raised p-6 md:p-10 mb-10 relative overflow-hidden">
+            
+            <header class="text-center mb-10 relative z-10 flex justify-between items-end border-b border-gray-200 pb-6">
+                <div class="text-left">
+                     <h1 class="text-2xl font-bold text-gray-700 tracking-tight">抽籤後台系統</h1>
+                     <p class="text-gray-500 text-xs mt-1">System Control Panel</p>
+                </div>
+                <button onclick="window.scrollTo({top: 0, behavior: 'smooth'})" class="text-gray-400 hover:text-teal-600 text-sm flex items-center gap-1 no-print">
+                    <i class="ph ph-caret-up"></i> 回首頁公告
+                </button>
+            </header>
+
+            <!-- 設定區域 Grid -->
+            <div id="setupSection" class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10 no-print transition-all duration-500">
+                
+                <!-- 1. 住戶設定 -->
+                <div class="neumorphic-raised p-6 transition-all hover:translate-y-[-2px]">
+                    <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-gray-700">
+                            <i class="ph ph-house-line text-xl text-teal-500"></i> 參與住戶名單
+                        </h2>
+                        <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-mono" id="householdCountBadge">0 戶</span>
+                    </div>
+
+                    <!-- 單筆新增 -->
+                    <div class="flex gap-3 mb-5">
+                        <input type="text" id="floorInput" placeholder="樓層" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
+                        <input type="text" id="unitInput" placeholder="戶別" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
+                        <button onclick="addHousehold()" class="neumorphic-btn btn-primary w-1/3 hover:text-teal-600">
+                            <i class="ph ph-plus-bold"></i> 新增
+                        </button>
+                    </div>
+
+                    <!-- 批次新增摺疊面板 (已改為預設展開) -->
+                    <div class="mb-4">
+                        <button onclick="toggleBatch('batchHousehold')" class="text-xs text-gray-500 flex items-center gap-1 hover:text-teal-600 transition-colors ml-1 mb-2">
+                            <i class="ph ph-caret-down"></i> 展開/收合 批次新增工具
+                        </button>
+                        <div id="batchHousehold" class="bg-gray-100/50 rounded-xl p-4 border border-gray-200/50">
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <input type="number" id="startFloor" placeholder="起始樓層 (例:2)" class="neumorphic-pressed p-2 text-sm">
+                                <input type="number" id="endFloor" placeholder="結束樓層 (例:15)" class="neumorphic-pressed p-2 text-sm">
+                            </div>
+                            <input type="text" id="units" placeholder="戶別 (例: A1, A2, A3)" class="neumorphic-pressed w-full p-2 text-sm mb-3">
+                            <button onclick="batchAddHouseholds()" class="neumorphic-btn w-full text-sm py-2">
+                                <i class="ph ph-copy"></i> 批次生成
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 列表 -->
+                    <div class="bg-gray-100/30 rounded-xl p-2 min-h-[150px]">
+                        <div id="householdList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                            <!-- JS 渲染內容 -->
+                            <div class="text-center text-gray-400 text-sm py-10 flex flex-col items-center">
+                                <i class="ph ph-users-three text-3xl mb-2 opacity-50"></i>
+                                尚無資料
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-end mt-4">
+                        <button onclick="removeAllHouseholds()" class="neumorphic-btn btn-danger text-xs px-3 py-2 hover:bg-red-50">
+                            <i class="ph ph-trash"></i> 清空列表
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. 車位設定 -->
+                <div class="neumorphic-raised p-6 transition-all hover:translate-y-[-2px]">
+                    <div class="flex justify-between items-center mb-6 pb-2 border-b border-gray-200">
+                        <h2 class="text-lg font-bold flex items-center gap-2 text-gray-700">
+                            <i class="ph ph-parking text-xl text-teal-500"></i> 抽籤車位清單
+                        </h2>
+                        <span class="bg-gray-200 text-gray-600 text-xs px-2 py-1 rounded-full font-mono" id="spotCountBadge">0 位</span>
+                    </div>
+
+                    <!-- 單筆新增 -->
+                    <div class="flex gap-3 mb-5">
+                        <input type="text" id="spotInput" placeholder="車位號碼" class="neumorphic-pressed w-2/3 p-3 text-center font-mono uppercase focus:bg-white">
+                        <button onclick="addParkingSpot()" class="neumorphic-btn btn-primary w-1/3 hover:text-teal-600">
+                            <i class="ph ph-plus-bold"></i> 新增
+                        </button>
+                    </div>
+
+                     <!-- 批次新增摺疊面板 (已改為預設展開) -->
+                     <div class="mb-4">
+                        <button onclick="toggleBatch('batchSpot')" class="text-xs text-gray-500 flex items-center gap-1 hover:text-teal-600 transition-colors ml-1 mb-2">
+                            <i class="ph ph-caret-down"></i> 展開/收合 批次新增工具
+                        </button>
+                        <div id="batchSpot" class="bg-gray-100/50 rounded-xl p-4 border border-gray-200/50">
+                            <input type="text" id="spotPrefix" placeholder="前綴 (選填，例: B1-)" class="neumorphic-pressed w-full p-2 text-sm mb-3">
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <input type="number" id="startSpot" placeholder="起始 (例:1)" class="neumorphic-pressed p-2 text-sm">
+                                <input type="number" id="endSpot" placeholder="結束 (例:50)" class="neumorphic-pressed p-2 text-sm">
+                            </div>
+                            <button onclick="batchAddParkingSpots()" class="neumorphic-btn w-full text-sm py-2">
+                                <i class="ph ph-copy"></i> 批次生成
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 列表 -->
+                    <div class="bg-gray-100/30 rounded-xl p-2 min-h-[150px]">
+                        <div id="parkingSpotList" class="space-y-2 max-h-60 overflow-y-auto custom-scrollbar pr-2">
+                             <!-- JS 渲染內容 -->
+                             <div class="text-center text-gray-400 text-sm py-10 flex flex-col items-center">
+                                <i class="ph ph-motorcycle text-3xl mb-2 opacity-50"></i>
+                                尚無資料
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end mt-4">
+                        <button onclick="removeAllParkingSpots()" class="neumorphic-btn btn-danger text-xs px-3 py-2 hover:bg-red-50">
+                            <i class="ph ph-trash"></i> 清空列表
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 控制台區域 -->
+            <div id="controlPanel" class="neumorphic-raised p-8 mb-10 text-center relative overflow-hidden no-print">
+                <div class="max-w-md mx-auto">
+                    <label for="lotteryIdInput" class="block text-sm font-bold text-gray-600 mb-2 flex justify-center items-center gap-1">
+                        <i class="ph ph-hash"></i> 抽籤種子碼 (日期或特定編號)
+                    </label>
+                    <div class="relative">
+                        <input type="text" id="lotteryIdInput" placeholder="例如: 20251224" class="neumorphic-pressed w-full p-4 text-center text-xl font-mono font-bold tracking-widest text-teal-600 focus:bg-white">
+                        <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">必填</div>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-2 mb-6">使用相同的編號與名單，將會產生完全相同的結果</p>
+
+                    <div class="flex flex-col sm:flex-row justify-center gap-4">
+                        <button id="drawButton" onclick="prepareLottery()" class="neumorphic-btn btn-accent-fill py-4 px-10 text-lg rounded-full transition-transform transform hover:scale-105 disabled:opacity-50 disabled:scale-100 disabled:cursor-not-allowed">
+                            <i class="ph ph-play-circle text-2xl"></i> 開始抽籤程序
+                        </button>
+                        <button id="recallButton" onclick="recallLottery()" class="neumorphic-btn py-3 px-8 rounded-full text-gray-600 hover:text-teal-600">
+                            <i class="ph ph-clock-counter-clockwise text-xl"></i> 喚回歷史結果
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 拉霸機動畫區 (逐一顯示用) -->
+            <div id="slotMachineSection" class="hidden my-10 no-print">
+                <div class="max-w-2xl mx-auto neumorphic-raised p-8 rounded-3xl slot-active text-center relative">
+                    
+                    <!-- 進度條 -->
+                    <div class="absolute top-4 right-6 text-xs font-mono text-gray-500 bg-white/50 px-2 py-1 rounded-md">
+                        進度: <span id="drawProgress">0/0</span>
+                    </div>
+
+                    <h3 class="text-teal-500 font-bold mb-6 text-xl flex items-center justify-center gap-2">
+                        <i class="ph ph-ticket text-2xl"></i> 抽籤進行中...
+                    </h3>
+
+                    <div class="grid grid-cols-2 gap-6 mb-8">
+                        <!-- 住戶顯示框 -->
+                        <div class="flex flex-col gap-2">
+                            <span class="text-sm font-bold text-gray-500">中籤住戶</span>
+                            <div class="bg-gray-200/50 inner-shadow rounded-2xl p-6 h-40 flex items-center justify-center overflow-hidden">
+                                <div id="slotHousehold" class="text-5xl font-bold text-gray-700 font-mono tracking-wider">---</div>
+                            </div>
+                        </div>
+                        <!-- 車位顯示框 -->
+                        <div class="flex flex-col gap-2">
+                            <span class="text-sm font-bold text-gray-500">配對車位</span>
+                            <div class="bg-gray-200/50 inner-shadow rounded-2xl p-6 h-40 flex items-center justify-center overflow-hidden">
+                                <div id="slotSpot" class="text-5xl font-bold text-teal-600 font-mono tracking-wider">---</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 操作區 -->
+                    <div class="flex flex-col items-center gap-3">
+                        <button id="nextDrawBtn" onclick="drawNext()" class="neumorphic-btn btn-accent-fill py-4 px-12 text-2xl rounded-full shadow-lg transform active:scale-95 transition-all">
+                            <i class="ph ph-hand-tap"></i> 抽出下一位
+                        </button>
+                        
+                        <button onclick="finishDrawing()" class="text-xs text-gray-400 hover:text-gray-600 underline mt-4">
+                            略過動畫，直接顯示所有結果
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 結果顯示區 -->
+            <div id="resultsSection" class="hidden neumorphic-raised p-8 bg-white md:bg-transparent">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-gray-200 pb-4">
+                    <div class="text-center md:text-left">
+                        <h2 class="text-2xl font-bold text-gray-800">抽籤結果公告</h2>
+                        <p class="text-gray-500 text-sm mt-1">抽籤編號: <span id="resultLotteryId" class="font-mono font-bold text-teal-600"></span></p>
+                        <p class="text-gray-400 text-xs" id="resultTimestamp"></p>
+                    </div>
+                    <div class="flex gap-2 mt-4 md:mt-0 no-print">
+                        <button onclick="exportToCSV()" class="neumorphic-btn text-sm px-4 py-2 hover:text-green-600">
+                            <i class="ph ph-file-csv text-lg"></i> 匯出 CSV
+                        </button>
+                        <button onclick="exportToWord()" class="neumorphic-btn text-sm px-4 py-2 hover:text-blue-600">
+                            <i class="ph ph-microsoft-word-logo text-lg"></i> 匯出 Word
+                        </button>
+                        <button onclick="window.print()" class="neumorphic-btn text-sm px-4 py-2 hover:text-gray-800">
+                            <i class="ph ph-printer text-lg"></i> 列印
+                        </button>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="min-w-full border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 text-gray-600 text-sm uppercase leading-normal">
+                                <th class="py-3 px-6 text-left rounded-l-lg">序號</th>
+                                <th class="py-3 px-6 text-left">戶別</th>
+                                <th class="py-3 px-6 text-left rounded-r-lg">車位編號</th>
+                            </tr>
+                        </thead>
+                        <tbody id="resultsTableBody" class="text-gray-600 text-sm font-light">
+                            <!-- JS 填入 -->
+                        </tbody>
+                    </table>
+                </div>
+
+                 <div id="unassignedInfo" class="mt-8 p-4 bg-gray-100/50 rounded-xl text-center border border-gray-200">
+                    <h4 class="font-bold text-gray-500 mb-2 text-sm">配對統計</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <p id="unassignedHouseholds" class="text-orange-500 font-medium"></p>
+                        <p id="unassignedSpots" class="text-blue-500 font-medium"></p>
+                    </div>
+                </div>
+                
+                <!-- 頁尾簽名區 (僅列印時顯示) -->
+                <div class="hidden print:flex justify-between mt-20 pt-10 border-t border-gray-300">
+                    <div class="text-center">
+                        <p class="mb-12">管理委員會主任委員</p>
+                        <p class="border-t border-black w-40 mx-auto"></p>
+                    </div>
+                    <div class="text-center">
+                        <p class="mb-12">監察委員/見證人</p>
+                        <p class="border-t border-black w-40 mx-auto"></p>
+                    </div>
+                    <div class="text-center">
+                        <p class="mb-12">經辦人員</p>
+                        <p class="border-t border-black w-40 mx-auto"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 歷史紀錄與重設 -->
+            <div class="mt-10 pt-6 border-t border-gray-300 no-print">
+                <div id="historySection" class="mb-6">
+                    <h3 class="text-sm font-bold text-gray-500 mb-3 flex items-center gap-2">
+                        <i class="ph ph-clock-history"></i> 最近紀錄
+                    </h3>
+                    <div id="historyList" class="flex flex-wrap gap-2">
+                        <span class="text-xs text-gray-400">無歷史紀錄</span>
+                    </div>
+                </div>
+                
+                <div class="text-center">
+                    <button onclick="masterReset()" class="text-xs text-red-400 hover:text-red-600 underline transition-colors">
+                        重設所有系統資料 (清除快取)
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <footer class="text-center text-gray-400 text-xs pb-4 no-print">
+            &copy; 2023 宜雄國際ONE 管委會 | System Optimized by Gemini
+        </footer>
+    </div>
 
     <script>
+        // --- 頁面滾動邏輯 ---
+        function scrollToMain() {
+            const mainApp = document.getElementById('main-app-container');
+            mainApp.scrollIntoView({ behavior: 'smooth' });
+        }
+
         // --- 狀態管理 ---
         const state = {
             households: [],
@@ -792,8 +853,8 @@
             const constraints = [
                 { h: "D-16", s: "B2-01" },
                 { h: "E-09", s: "B2-40" },
-                { h: "E-08", s: "B2-03" },
-                { h: "E-10", s: "B2-02" },
+                { h: "E-08", s: "B2-08" },
+                { h: "E-10", s: "B2-03" },
             ];
             
             let householdsToShuffle = [...state.households];
@@ -804,7 +865,7 @@
                 const hIndex = householdsToShuffle.indexOf(c.h);
                 const sIndex = spotsToShuffle.indexOf(c.s);
 
-                // ^__^
+                // 只有當兩者都存在於名單中時才執行
                 if (hIndex > -1 && sIndex > -1) {
                     householdsToShuffle.splice(hIndex, 1);
                     spotsToShuffle.splice(sIndex, 1);
@@ -828,7 +889,7 @@
                 });
             }
 
-            // 
+            // LUCKY ONE
             if (fixedPairs.length > 0) {
                 rawResults.push(...fixedPairs);
             }
