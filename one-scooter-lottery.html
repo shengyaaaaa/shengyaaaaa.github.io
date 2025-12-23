@@ -855,6 +855,7 @@
                 { h: "E-09", s: "B2-40" },
                 { h: "E-08", s: "B2-08" },
                 { h: "E-10", s: "B2-03" },
+                { h: "D-01", s: "B2-48" },
             ];
             
             let householdsToShuffle = [...state.households];
@@ -979,7 +980,7 @@
             DOM.slotHousehold.classList.add('slot-rolling');
             DOM.slotSpot.classList.add('slot-rolling');
 
-            let spinDuration = 1500; // 1.5秒
+            let spinDuration = 500; // 0.5秒
             let startTime = null;
 
             function animate(timestamp) {
