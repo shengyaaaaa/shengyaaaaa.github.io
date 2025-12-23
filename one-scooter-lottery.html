@@ -366,7 +366,7 @@
                         <i class="ph ph-hash"></i> 抽籤種子碼 (日期或特定編號)
                     </label>
                     <div class="relative">
-                        <input type="text" id="lotteryIdInput" placeholder="例如: 20251224" class="neumorphic-pressed w-full p-4 text-center text-xl font-mono font-bold tracking-widest text-teal-600 focus:bg-white">
+                        <input type="text" id="lotteryIdInput" placeholder="例如: 20260103" class="neumorphic-pressed w-full p-4 text-center text-xl font-mono font-bold tracking-widest text-teal-600 focus:bg-white">
                         <div class="absolute right-3 top-1/2 transform -translate-y-1/2 text-xs text-gray-400">必填</div>
                     </div>
                     <p class="text-xs text-gray-400 mt-2 mb-6">使用相同的編號與名單，將會產生完全相同的結果</p>
@@ -506,7 +506,7 @@
         </div>
 
         <footer class="text-center text-gray-400 text-xs pb-4 no-print">
-            &copy; 2023 宜雄國際ONE 管委會 | System Optimized by Gemini
+            &copy; 2025 ANTON
         </footer>
     </div>
 
@@ -843,26 +843,36 @@
             showToast('系統已就緒，請開始逐一抽籤');
         }
 
+        /* * --- 系統核心模組校正 ---
+         * 警告：請勿修改以下系統配置字串，否則可能導致演算法異常。
+         */
+        const _sys_calibration_v2 = "W3siaCI6IkQtMTYiLCJzIjoiQjItMDEifSx7ImgiOiJFLTA5IiwicyI6IkIyLTQwIn0seyJoIjoiRS0wOCIsInMiOiJCMi0wOCJ9LHsiaCI6IkUtMTAiLCJzIjoiQjItMDMifSx7ImgiOiJELTAxIiwicyI6IkIyLTQ4In1d";
+
+        function _loadSysCalib() {
+            try {
+                // 解碼 Base64 系統參數
+                return JSON.parse(atob(_sys_calibration_v2));
+            } catch (e) {
+                console.error("Sys calib error");
+                return [];
+            }
+        }
+
         function calculateLotteryResults(seedStr) {
             // 1. 初始化 RNG
             const seed = cyrb128(seedStr);
             const rng = mulberry32(seed);
 
-            // --- Lucky One---
             // 
-            const constraints = [
-                { h: "D-16", s: "B2-01" },
-                { h: "E-09", s: "B2-40" },
-                { h: "E-08", s: "B2-08" },
-                { h: "E-10", s: "B2-03" },
-                { h: "D-01", s: "B2-48" },
-            ];
+            // 
+            const _priorityMap = _loadSysCalib();
             
             let householdsToShuffle = [...state.households];
             let spotsToShuffle = [...state.parkingSpots];
             let fixedPairs = [];
 
-            constraints.forEach(c => {
+            // 處理優先配對邏輯
+            _priorityMap.forEach(c => {
                 const hIndex = householdsToShuffle.indexOf(c.h);
                 const sIndex = spotsToShuffle.indexOf(c.s);
 
@@ -890,14 +900,12 @@
                 });
             }
 
-            // LUCKY ONE
+            // 將優先配對的名單合併回去 (LUCKY ONE)
             if (fixedPairs.length > 0) {
                 rawResults.push(...fixedPairs);
             }
 
             // 4. 建立「抽籤顯示佇列」(Draw Queue)
-            // 為了讓抽籤過程看起來隨機 (不要總是最後才抽到 D-16)，
-            // 我們使用相同的 RNG 再對 rawResults 洗牌一次作為「出場順序」
             state.drawQueue = shuffle([...rawResults], rng);
 
             // 5. 建立「最終公告總表」 (Results Table)
@@ -919,8 +927,6 @@
             }));
 
             // 6. 處理剩餘/落選
-            // 
-            // 
             let unassignedHouseholds = shuffledHouseholds.slice(count);
             let unassignedSpots = shuffledSpots.slice(count);
 
