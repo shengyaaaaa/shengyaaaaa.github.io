@@ -155,112 +155,70 @@
         }
 
         /* --- 左邊貓 (cat.png) --- */
-        /* 放在左下，往右看 */
-        .cat-left {
-            bottom: -25px;
-            left: 20px;
-            width: 180px; /* 電腦版大小 */
-        }
+        .cat-left { bottom: -25px; left: 20px; width: 180px; }
         .cat-left:hover { transform: translateY(-30px); }
-        .cat-left .cat-bubble {
-            top: -50px; left: 10px;
-        }
-        .cat-left .cat-bubble::after {
-            content: ''; position: absolute; bottom: -8px; left: 20px;
-            border-width: 8px 8px 0; border-style: solid; border-color: white transparent;
-        }
+        .cat-left .cat-bubble { top: -50px; left: 10px; }
+        .cat-left .cat-bubble::after { content: ''; position: absolute; bottom: -8px; left: 20px; border-width: 8px 8px 0; border-style: solid; border-color: white transparent; }
         .cat-left:hover .cat-bubble { top: -60px; }
 
-
         /* --- 右邊貓 (cat2.png) --- */
-        /* 放在右下，往左看 */
-        .cat-right {
-            bottom: -25px;
-            right: 20px;
-            width: 180px; /* 電腦版大小 */
-        }
+        .cat-right { bottom: -25px; right: 20px; width: 180px; }
         .cat-right:hover { transform: translateY(-30px); }
-        .cat-right .cat-bubble {
-            top: -50px; right: 10px;
-        }
-        .cat-right .cat-bubble::after {
-            content: ''; position: absolute; bottom: -8px; right: 20px;
-            border-width: 8px 8px 0; border-style: solid; border-color: white transparent;
-        }
+        .cat-right .cat-bubble { top: -50px; right: 10px; }
+        .cat-right .cat-bubble::after { content: ''; position: absolute; bottom: -8px; right: 20px; border-width: 8px 8px 0; border-style: solid; border-color: white transparent; }
         .cat-right:hover .cat-bubble { top: -60px; }
 
-
         /* --- 上方貓 (cat3.png) --- */
-        /* 放在右上角，探頭出來 */
-        .cat-top {
-            top: -20px; /* 稍微藏一點 */
-            right: 20px;
-            width: 150px; /* 上面的貓稍微小一點點，避免壓迫感 */
-        }
-        .cat-top:hover { transform: translateY(30px); /* 往下探 */ }
-        .cat-top .cat-bubble {
-            bottom: -50px; right: 40px; /* 氣泡在下面 */
-        }
-        .cat-top .cat-bubble::after {
-            content: ''; position: absolute; top: -8px; right: 20px;
-            border-width: 0 8px 8px; border-style: solid; border-color: transparent transparent white;
-        }
+        .cat-top { top: -20px; right: 20px; width: 150px; }
+        .cat-top:hover { transform: translateY(30px); }
+        .cat-top .cat-bubble { bottom: -50px; right: 40px; }
+        .cat-top .cat-bubble::after { content: ''; position: absolute; top: -8px; right: 20px; border-width: 0 8px 8px; border-style: solid; border-color: transparent transparent white; }
         .cat-top:hover .cat-bubble { bottom: -65px; }
 
-
-        /* --- RWD 手機版調整 --- */
         @media (max-width: 768px) {
-            /* 左貓 */
-            .cat-left {
-                width: 110px;
-                left: -10px; /* 稍微靠邊一點 */
-                bottom: -15px;
-            }
-            /* 右貓 */
-            .cat-right {
-                width: 110px;
-                right: -10px; /* 稍微靠邊一點 */
-                bottom: -15px;
-            }
-            /* 上貓 - 手機版如果擋到字，可以隱藏或再縮小 */
-            .cat-top {
-                width: 100px;
-                right: 0px;
-                top: -10px;
-            }
+            .cat-left { width: 110px; left: -10px; bottom: -15px; }
+            .cat-right { width: 110px; right: -10px; bottom: -15px; }
+            .cat-top { width: 100px; right: 0px; top: -10px; }
         }
 
+        /* 音效按鈕 */
+        #sound-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 50;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            font-size: 24px;
+        }
     </style>
 </head>
 <body class="min-h-screen flex flex-col items-center py-8 px-4">
 
     <div id="snow-container"></div>
+    
+    <!-- 音效開關 -->
+    <button id="sound-toggle" class="neu-btn" onclick="toggleSound()" title="開關音效">
+        <i class="ph-fill ph-speaker-simple-high" id="sound-icon"></i>
+    </button>
 
-    <!-- 1. 左邊貓 (cat.png) - 牠看右邊，放在左邊往中間看 -->
+    <!-- 1. 左邊貓 -->
     <div class="cat-container cat-left" onclick="meow(event)">
         <div class="cat-bubble">選我選我！✨</div>
-        <img src="cat.png" 
-             onerror="this.src='https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=300&auto=format&fit=crop'" 
-             alt="Left Cat" 
-             class="cat-img">
+        <img src="cat.png" onerror="this.src='https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=300&auto=format&fit=crop'" alt="Left Cat" class="cat-img">
     </div>
 
-    <!-- 2. 右邊貓 (cat2.png) - 牠看左邊，放在右邊往中間看 -->
+    <!-- 2. 右邊貓 -->
     <div class="cat-container cat-right" onclick="meow(event)">
         <div class="cat-bubble">聖誕快樂！喵～ 🎄</div>
-        <img src="cat2.png" 
-             onerror="this.src='https://images.unsplash.com/photo-1533738363-b7f9aef128ce?q=80&w=300&auto=format&fit=crop'" 
-             alt="Right Cat" 
-             class="cat-img">
+        <img src="cat2.png" onerror="this.src='https://images.unsplash.com/photo-1533738363-b7f9aef128ce?q=80&w=300&auto=format&fit=crop'" alt="Right Cat" class="cat-img">
     </div>
 
-    <!-- 3. 上方貓 (cat3.png) - 新來的，在右上角監工 -->
+    <!-- 3. 上方貓 -->
     <div class="cat-container cat-top" onclick="meow(event)">
         <div class="cat-bubble">許總再加碼！！👀</div>
-        <img src="cat3.png" 
-             onerror="this.src='https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=300&auto=format&fit=crop'" 
-             alt="Top Cat" 
-             class="cat-img">
+        <img src="cat3.png" onerror="this.src='https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=300&auto=format&fit=crop'" alt="Top Cat" class="cat-img">
     </div>
 
     <!-- 標題 -->
@@ -396,14 +354,115 @@
         let currentGiver = null;
         let isSpinning = false;
         let historyLog = [];
+        
+        /* --- 音效系統 (使用 Web Audio API 合成聲音，無需外部檔案) --- */
+        let audioCtx = null;
+        let isMuted = false;
 
-        // 貓咪點擊互動 (支援點擊不同位置)
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function toggleSound() {
+            isMuted = !isMuted;
+            const icon = document.getElementById('sound-icon');
+            if (isMuted) {
+                icon.classList.remove('ph-speaker-simple-high');
+                icon.classList.add('ph-speaker-simple-slash');
+            } else {
+                icon.classList.remove('ph-speaker-simple-slash');
+                icon.classList.add('ph-speaker-simple-high');
+                // 播放一個測試音效確認開啟
+                playNote(600, 0.1, 'sine');
+            }
+            initAudio(); // 確保使用者互動後 AudioContext 啟動
+        }
+
+        // 基礎音調產生器
+        function playNote(freq, duration, type = 'sine', vol = 0.1) {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        // 1. 轉動時的機械聲 (短促的方波)
+        function playTickSound() {
+            playNote(200 + Math.random() * 50, 0.05, 'square', 0.05); 
+        }
+
+        // 2. 中獎音效 (大三和弦琶音)
+        function playWinSound() {
+            if (isMuted || !audioCtx) return;
+            const now = audioCtx.currentTime;
+            // C Major 琶音: C5, E5, G5, C6
+            const notes = [523.25, 659.25, 783.99, 1046.50];
+            notes.forEach((freq, i) => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.value = freq;
+                
+                // 時間差播放
+                const startTime = now + i * 0.1;
+                const duration = 0.8;
+                
+                gain.gain.setValueAtTime(0, startTime);
+                gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
+                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start(startTime);
+                osc.stop(startTime + duration);
+            });
+        }
+
+        // 3. 貓叫聲 (模擬)
+        function playMeow() {
+            if (isMuted || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine'; // 貓叫通常接近正弦波
+            
+            // 頻率變化：從中音滑到高音再滑下來 (Me-ow)
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.15); // Me...
+            osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.4);  // ...ow
+            
+            gain.gain.setValueAtTime(0, audioCtx.currentTime);
+            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1);
+            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.5);
+        }
+
+        /* --- 遊戲邏輯 --- */
+
+        // 貓咪點擊互動
         function meow(event) {
-            // 取得點擊位置相對於視窗的比例
+            initAudio(); // 確保聲音啟動
+            playMeow();  // 播放貓叫
+            
             const x = event.clientX / window.innerWidth;
             const y = event.clientY / window.innerHeight;
 
-            // 點擊貓咪會噴小愛心
             confetti({
                 particleCount: 30,
                 spread: 60,
@@ -440,7 +499,6 @@
             return array;
         }
 
-        // --- 核心邏輯：包含「內定」規則 ---
         function generateDerangement(names) {
             let shuffled = [...names];
             let isValid = false;
@@ -448,37 +506,19 @@
 
             while (!isValid && attempts < 50000) {
                 attempts++;
-                
                 for (let i = shuffled.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
-
                 isValid = true;
                 for (let i = 0; i < names.length; i++) {
                     const giver = names[i];
                     const receiver = shuffled[i];
-
-                    if (giver === receiver) {
-                        isValid = false;
-                        break;
-                    }
-
-                    // --- START ---
-                    
-                    // 1. "
-                    if (giver === "聖雅" && receiver !== "惠雯") {
-                        isValid = false;
-                        break;
-                    }
-
-                    // 2. "
-                    if (giver === "惠雯" && (receiver === "語婕" || receiver === "美如" || receiver === "嘉木" || receiver === "榮耀")) {
-                        isValid = false;
-                        break;
-                    }
-                    
-                    // --- END ---
+                    if (giver === receiver) { isValid = false; break; }
+                    // 1. 聖雅指定條件
+                    if (giver === "聖雅" && receiver !== "惠雯") { isValid = false; break; }
+                    // 2. 惠雯排除條件
+                    if (giver === "惠雯" && (receiver === "語婕" || receiver === "美如" || receiver === "嘉木" || receiver === "榮耀")) { isValid = false; break; }
                 }
             }
 
@@ -486,44 +526,37 @@
                 alert("系統分配失敗(條件過於嚴苛)，請重新整理再試一次。");
                 return {};
             }
-
             const map = {};
             names.forEach((name, i) => map[name] = shuffled[i]);
             return map;
         }
 
         function initGame() {
+            initAudio(); // 用戶互動時初始化 AudioContext
             const raw = document.getElementById('name-input').value;
             participants = raw.split('\n').map(n => n.trim()).filter(n => n);
-
             if (participants.length < 2) {
                 alert('至少需要兩個人才能交換禮物喔！');
                 return;
             }
-
             exchangeMap = generateDerangement(participants);
             remainingGivers = shuffleArray([...participants]);
-
             document.getElementById('setup-screen').classList.add('hidden');
             const gameScreen = document.getElementById('game-screen');
             gameScreen.classList.remove('hidden');
             gameScreen.classList.add('flex');
-
             renderGiverButtons();
         }
 
         function renderGiverButtons() {
             const grid = document.getElementById('giver-grid');
             grid.innerHTML = '';
-
             if (remainingGivers.length === 0) {
                 grid.innerHTML = '<div class="col-span-full text-center text-white/50 py-10 text-3xl font-bold">🎉 派對圓滿結束！</div>';
                 return;
             }
-
             remainingGivers.forEach(name => {
                 const btn = document.createElement('button');
-                // 按鈕樣式
                 btn.className = 'neu-btn py-6 px-2 text-2xl md:text-3xl hover:text-[#FFD700] hover:border-[#FFD700] w-full min-h-[100px] break-words transition-colors';
                 btn.innerHTML = name;
                 btn.onclick = () => selectGiver(name, btn);
@@ -533,10 +566,13 @@
 
         function selectGiver(name, btnEl) {
             if (isSpinning) return;
+            initAudio(); // 確保聲音準備好
+            
+            // 播放選擇音效 (短促的高音)
+            playNote(800, 0.05, 'sine', 0.05);
 
             document.querySelectorAll('#giver-grid button').forEach(b => b.classList.remove('selected'));
             btnEl.classList.add('selected');
-
             currentGiver = name;
             
             const slotSection = document.getElementById('slot-section');
@@ -547,7 +583,6 @@
             }, 50);
 
             document.getElementById('current-player-name').textContent = name;
-            
             document.getElementById('slot-reel').innerHTML = '<span class="text-7xl font-bold">?</span>';
             document.getElementById('slot-window').classList.remove('slot-active');
             
@@ -560,6 +595,7 @@
 
         function spin() {
             if (!currentGiver || isSpinning) return;
+            initAudio();
 
             isSpinning = true;
             const spinBtn = document.getElementById('spin-btn');
@@ -577,6 +613,7 @@
             const pool = participants.filter(p => p !== currentGiver);
             let duration = 2500;
             let start = null;
+            let lastTickTime = 0;
 
             function animate(timestamp) {
                 if (!start) start = timestamp;
@@ -585,6 +622,13 @@
                 if (progress < duration) {
                     const randomName = pool[Math.floor(Math.random() * pool.length)];
                     reel.innerText = randomName;
+
+                    // 每 100ms 播放一次「答」的聲音，模擬轉動聲
+                    if (timestamp - lastTickTime > 80) {
+                        playTickSound();
+                        lastTickTime = timestamp;
+                    }
+
                     requestAnimationFrame(animate);
                 } else {
                     finalize();
@@ -600,6 +644,9 @@
             reel.innerText = target;
             reel.classList.remove('slot-rolling');
             document.getElementById('slot-window').classList.remove('slot-active');
+
+            // 播放中獎音效
+            playWinSound();
 
             // 慶祝特效
             confetti({
@@ -625,6 +672,9 @@
         }
 
         function closeResult() {
+            // 關閉時的音效
+            playNote(400, 0.1, 'sine', 0.05);
+
             document.getElementById('result-modal').classList.add('hidden');
             
             const slotSection = document.getElementById('slot-section');
