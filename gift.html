@@ -6,15 +6,14 @@
     <title>2025京石家族聖誕交換禮物</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Phosphor Icons (圖示庫) -->
+    <!-- Phosphor Icons -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Canvas Confetti (拉炮特效) -->
+    <!-- Canvas Confetti -->
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-    <!-- Google Fonts: 引入 Noto Sans TC (思源黑體) -->
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
 
     <style>
-        /* --- 變數設定 --- */
         :root {
             --bg-color: #2C5545; 
             --text-primary: #F3F8F5;
@@ -22,7 +21,6 @@
             --shadow-light: rgba(255, 255, 255, 0.1);
             --shadow-dark: rgba(0, 0, 0, 0.35);
             --xmas-red: #D32F2F;
-            --xmas-red-dark: #9A1C1C;
             --xmas-gold: #FFD700;
         }
 
@@ -36,7 +34,6 @@
             min-height: 100vh;
         }
 
-        /* --- 擬態風格 CSS --- */
         .neu-raised {
             background: var(--bg-color);
             border-radius: 24px;
@@ -78,7 +75,6 @@
             box-shadow: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
             color: var(--xmas-gold);
             border: 2px solid var(--xmas-gold);
-            text-shadow: 0 0 15px rgba(255, 215, 0, 0.4);
         }
 
         .btn-fill-red {
@@ -103,37 +99,17 @@
             opacity: 0.7;
             transform: scale(0.9);
         }
-        
-        .title-chinese {
-            font-weight: 900;
-            letter-spacing: 0.15em; 
-        }
 
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.85); backdrop-filter: blur(10px); }
-        
-        #snow-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 0; }
         .snowflake { position: absolute; color: white; opacity: 0.3; animation: fall linear infinite; }
         @keyframes fall { to { transform: translateY(100vh); } }
 
-        .text-giant { font-size: 5rem; line-height: 1.2; }
-        @media (min-width: 768px) { .text-giant { font-size: 7rem; } }
-
-        /* --- 貓咪通用樣式 --- */
+        /* 貓咪樣式 */
         .cat-container {
             position: fixed;
             z-index: 40;
-            height: auto;
-            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
             cursor: pointer;
-            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
         }
-        .cat-img {
-            width: 100%;
-            display: block;
-            pointer-events: none;
-        }
-
-        /* 對話框氣泡 */
         .cat-bubble {
             position: absolute;
             background: white;
@@ -146,51 +122,16 @@
             transform: scale(0.8);
             transition: all 0.3s ease;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-            pointer-events: none;
             white-space: nowrap;
         }
-        .cat-container:hover .cat-bubble {
-            opacity: 1;
-            transform: scale(1);
-        }
-
-        /* --- 左邊貓 (cat.png) --- */
+        .cat-container:hover .cat-bubble { opacity: 1; transform: scale(1); }
         .cat-left { bottom: -25px; left: 20px; width: 180px; }
-        .cat-left:hover { transform: translateY(-30px); }
-        .cat-left .cat-bubble { top: -50px; left: 10px; }
-        .cat-left .cat-bubble::after { content: ''; position: absolute; bottom: -8px; left: 20px; border-width: 8px 8px 0; border-style: solid; border-color: white transparent; }
-        .cat-left:hover .cat-bubble { top: -60px; }
-
-        /* --- 右邊貓 (cat2.png) --- */
         .cat-right { bottom: -25px; right: 20px; width: 180px; }
-        .cat-right:hover { transform: translateY(-30px); }
-        .cat-right .cat-bubble { top: -50px; right: 10px; }
-        .cat-right .cat-bubble::after { content: ''; position: absolute; bottom: -8px; right: 20px; border-width: 8px 8px 0; border-style: solid; border-color: white transparent; }
-        .cat-right:hover .cat-bubble { top: -60px; }
-
-        /* --- 上方貓 (cat3.png) --- */
         .cat-top { top: -20px; right: 20px; width: 150px; }
-        .cat-top:hover { transform: translateY(30px); }
-        .cat-top .cat-bubble { bottom: -50px; right: 40px; }
-        .cat-top .cat-bubble::after { content: ''; position: absolute; top: -8px; right: 20px; border-width: 0 8px 8px; border-style: solid; border-color: transparent transparent white; }
-        .cat-top:hover .cat-bubble { bottom: -65px; }
 
         @media (max-width: 768px) {
-            .cat-left { width: 110px; left: -10px; bottom: -15px; }
-            .cat-right { width: 110px; right: -10px; bottom: -15px; }
-            .cat-top { width: 100px; right: 0px; top: -10px; }
-        }
-
-        /* 音效按鈕 */
-        #sound-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            z-index: 50;
-            width: 50px;
-            height: 50px;
-            border-radius: 50%;
-            font-size: 24px;
+            .cat-left, .cat-right { width: 110px; }
+            .cat-top { width: 100px; }
         }
     </style>
 </head>
@@ -199,31 +140,23 @@
     <div id="snow-container"></div>
     
     <!-- 音效開關 -->
-    <button id="sound-toggle" class="neu-btn" onclick="toggleSound()" title="開關音效">
+    <button id="sound-toggle" class="neu-btn fixed top-5 right-5 z-50 w-12 h-12 rounded-full" onclick="toggleSound()">
         <i class="ph-fill ph-speaker-simple-high" id="sound-icon"></i>
     </button>
 
-    <!-- 1. 左邊貓 -->
+    <!-- 裝飾貓咪 -->
     <div class="cat-container cat-left" onclick="meow(event)">
-        <div class="cat-bubble">選我選我！✨</div>
-        <img src="cat.png" onerror="this.src='https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=300&auto=format&fit=crop'" alt="Left Cat" class="cat-img">
+        <div class="cat-bubble">誰會是幸運兒？✨</div>
+        <img src="cat.png" onerror="this.src='https://images.unsplash.com/photo-1573865526739-10659fec78a5?q=80&w=300&auto=format&fit=crop'" class="w-full">
     </div>
-
-    <!-- 2. 右邊貓 -->
     <div class="cat-container cat-right" onclick="meow(event)">
         <div class="cat-bubble">聖誕快樂！喵～ 🎄</div>
-        <img src="cat2.png" onerror="this.src='https://images.unsplash.com/photo-1533738363-b7f9aef128ce?q=80&w=300&auto=format&fit=crop'" alt="Right Cat" class="cat-img">
-    </div>
-
-    <!-- 3. 上方貓 -->
-    <div class="cat-container cat-top" onclick="meow(event)">
-        <div class="cat-bubble">許總再加碼！！👀</div>
-        <img src="cat3.png" onerror="this.src='https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?q=80&w=300&auto=format&fit=crop'" alt="Top Cat" class="cat-img">
+        <img src="cat2.png" onerror="this.src='https://images.unsplash.com/photo-1533738363-b7f9aef128ce?q=80&w=300&auto=format&fit=crop'" class="w-full">
     </div>
 
     <!-- 標題 -->
-    <header class="text-center mb-8 relative z-10 mt-6 md:mt-0">
-        <h1 class="text-4xl md:text-6xl font-black text-[#F3F8F5] mb-2 title-chinese drop-shadow-xl leading-tight">
+    <header class="text-center mb-8 relative z-10">
+        <h1 class="text-4xl md:text-6xl font-black text-[#F3F8F5] mb-2 drop-shadow-xl leading-tight">
             2025京石家族<br><span class="text-[#FFD700]">聖誕交換禮物大會</span>
         </h1>
         <div class="h-1 w-20 bg-[#D32F2F] mx-auto rounded-full mt-4"></div>
@@ -233,14 +166,11 @@
     <div id="setup-screen" class="w-full max-w-3xl neu-raised p-8 flex flex-col gap-6 animate-fade-in relative z-10 mb-12">
         <div class="flex items-center gap-4 border-b border-white/10 pb-4">
             <i class="ph-duotone ph-list-dashes text-3xl text-[#FFD700]"></i>
-            <div>
-                <h2 class="text-xl font-bold text-white tracking-widest">參與者名單</h2>
-                <p class="text-sm text-[#8DAFA3] font-medium">請確認所有參加的人員</p>
-            </div>
+            <h2 class="text-xl font-bold text-white tracking-widest">參與者名單 (公平抽籤版)</h2>
         </div>
 
         <textarea id="name-input" 
-            class="neu-pressed w-full h-80 p-6 text-xl md:text-2xl font-bold resize-none focus:border focus:border-white/20 transition-colors leading-relaxed tracking-wide text-white/90"
+            class="neu-pressed w-full h-80 p-6 text-xl font-bold resize-none text-white/90"
             placeholder="輸入參與者">許總
 小靜
 瓅儀
@@ -268,82 +198,40 @@
 詠婷
 沁怡</textarea>
 
-        <button onclick="initGame()" class="neu-btn btn-fill-red w-full py-6 text-xl md:text-2xl rounded-3xl gap-3 mt-2 hover:scale-[1.01] tracking-widest">
+        <button onclick="initGame()" class="neu-btn btn-fill-red w-full py-6 text-xl rounded-3xl gap-3 hover:scale-[1.01] tracking-widest">
             開始派對
         </button>
     </div>
 
     <!-- 2. 遊戲畫面 -->
     <div id="game-screen" class="w-full max-w-6xl hidden flex-col gap-8 animate-fade-in relative z-10 mb-12">
-        
-        <!-- 上方：我是誰 -->
         <div class="neu-raised p-6 md:p-10">
-            <h3 class="text-xl md:text-2xl font-bold text-[#F3F8F5] mb-8 flex items-center gap-4">
+            <h3 class="text-xl font-bold text-[#F3F8F5] mb-8 flex items-center gap-4">
                 <span class="bg-[#D32F2F] text-white w-8 h-8 rounded-full flex items-center justify-center text-base shadow-md font-bold">1</span>
-                <span class="tracking-widest">你是誰？</span> 
-                <span class="text-base md:text-lg font-normal text-[#8DAFA3] ml-auto">請點擊名字</span>
+                <span>請選擇你的名字</span>
             </h3>
-            
-            <div id="giver-grid" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                <!-- 按鈕生成區 -->
-            </div>
+            <div id="giver-grid" class="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4"></div>
         </div>
 
-        <!-- 下方：拉霸區 -->
-        <div id="slot-section" class="neu-raised p-8 md:p-14 text-center relative hidden opacity-0 transition-opacity duration-500">
-            <div class="absolute -top-5 left-1/2 transform -translate-x-1/2 bg-[#D32F2F] text-white px-8 py-2 rounded-full shadow-xl font-bold flex items-center gap-3 border-2 border-[#FFD700] whitespace-nowrap z-20">
-                <span id="current-player-name" class="text-lg tracking-widest"></span> 
+        <div id="slot-section" class="neu-raised p-8 md:p-14 text-center hidden opacity-0 transition-opacity duration-500">
+            <div id="slot-window" class="w-full h-64 md:h-80 neu-pressed flex items-center justify-center overflow-hidden rounded-[2rem] bg-[#234437]">
+                <div id="slot-reel" class="text-6xl md:text-8xl font-black text-[#FFD700] drop-shadow-2xl">?</div>
             </div>
-
-            <div class="mt-8 mb-10">
-                <!-- 拉霸視窗 -->
-                <div class="w-full h-64 md:h-80 neu-pressed flex items-center justify-center overflow-hidden relative rounded-[2rem] border-4 border-transparent transition-all duration-300 bg-[#234437]" id="slot-window">
-                    <div id="slot-reel" class="text-giant font-black text-[#FFD700] tracking-tight drop-shadow-2xl">
-                        ?
-                    </div>
-                </div>
-            </div>
-
-            <button id="spin-btn" onclick="spin()" class="neu-btn btn-fill-red py-6 px-16 text-2xl md:text-3xl rounded-full shadow-2xl transform active:scale-95 transition-all w-full md:w-auto min-w-[300px] border-4 border-[#B71C1C] tracking-widest">
+            <button id="spin-btn" onclick="spin()" class="neu-btn btn-fill-red py-6 px-16 text-2xl rounded-full mt-10 w-full md:w-auto tracking-widest">
                 按我抽獎
-            </button>
-        </div>
-
-        <div class="flex justify-center gap-6 mt-4 opacity-60 hover:opacity-100 transition-opacity">
-            <button onclick="showHistory()" class="neu-btn px-8 py-4 text-base tracking-widest text-[#8DAFA3]">
-                查看紀錄
-            </button>
-            <button onclick="resetGame()" class="neu-btn px-8 py-4 text-base tracking-widest text-[#E57373]">
-                重新開始
             </button>
         </div>
     </div>
 
     <!-- 結果彈窗 -->
-    <div id="result-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center modal-overlay p-4">
-        <div class="neu-raised bg-[#8B0000] p-8 md:p-12 max-w-2xl w-full text-center relative animate-[popIn_0.4s_ease-out] border-4 border-[#FFD700]">
-            
-            <!-- 裝飾標題 -->
-            <div class="mb-2">
-                <i class="ph-fill ph-confetti text-4xl text-[#FFD700] mb-2 inline-block"></i>
+    <div id="result-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center bg-black/80 backdrop-blur-md p-4">
+        <div class="neu-raised bg-[#8B0000] p-10 max-w-2xl w-full text-center border-4 border-[#FFD700]">
+            <h2 class="text-2xl font-bold text-[#FFD700] mb-1">恭喜你抽到</h2>
+            <div class="my-6 py-8 border-y border-[#FFD700]/30">
+                <div id="result-name" class="text-6xl md:text-8xl font-black text-white mb-4">Name</div>
+                <p class="text-white/90 text-2xl font-bold">的禮物 🎁</p>
             </div>
-
-            <h2 class="text-2xl md:text-3xl font-bold text-[#FFD700] tracking-widest mb-1">恭喜你抽到</h2>
-            
-            <div class="my-6 py-8 border-t border-b border-[#FFD700]/30 flex flex-col items-center">
-                <!-- 結果名字 -->
-                <div id="result-name" class="text-6xl md:text-8xl font-black text-white break-words leading-tight drop-shadow-xl tracking-wide mb-4">
-                    Name
-                </div>
-                <!-- 結尾詞 -->
-                <p class="text-white/90 text-2xl md:text-3xl tracking-widest font-bold">
-                    的禮物 🎁
-                </p>
-            </div>
-
-            <button onclick="closeResult()" class="neu-btn w-full py-6 text-2xl font-bold bg-[#2E7D32] text-white hover:bg-[#256328] shadow-xl border-none tracking-widest">
-                來！下面一位！
-            </button>
+            <button onclick="closeResult()" class="neu-btn w-full py-6 text-2xl font-bold bg-[#2E7D32] text-white">下一位！</button>
         </div>
     </div>
 
@@ -354,37 +242,15 @@
         let currentGiver = null;
         let isSpinning = false;
         let historyLog = [];
-        
-        /* --- 音效系統 (使用 Web Audio API 合成聲音，無需外部檔案) --- */
         let audioCtx = null;
         let isMuted = false;
 
+        // --- 音效系統 ---
         function initAudio() {
-            if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-            }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
-        function toggleSound() {
-            isMuted = !isMuted;
-            const icon = document.getElementById('sound-icon');
-            if (isMuted) {
-                icon.classList.remove('ph-speaker-simple-high');
-                icon.classList.add('ph-speaker-simple-slash');
-            } else {
-                icon.classList.remove('ph-speaker-simple-slash');
-                icon.classList.add('ph-speaker-simple-high');
-                // 播放一個測試音效確認開啟
-                playNote(600, 0.1, 'sine');
-            }
-            initAudio(); // 確保使用者互動後 AudioContext 啟動
-        }
-
-        // 基礎音調產生器
         function playNote(freq, duration, type = 'sine', vol = 0.1) {
             if (isMuted || !audioCtx) return;
             const osc = audioCtx.createOscillator();
@@ -399,166 +265,68 @@
             osc.stop(audioCtx.currentTime + duration);
         }
 
-        // 1. 轉動時的機械聲 (短促的方波)
-        function playTickSound() {
-            playNote(200 + Math.random() * 50, 0.05, 'square', 0.05); 
-        }
-
-        // 2. 中獎音效 (大三和弦琶音)
         function playWinSound() {
-            if (isMuted || !audioCtx) return;
-            const now = audioCtx.currentTime;
-            // C Major 琶音: C5, E5, G5, C6
-            const notes = [523.25, 659.25, 783.99, 1046.50];
-            notes.forEach((freq, i) => {
-                const osc = audioCtx.createOscillator();
-                const gain = audioCtx.createGain();
-                osc.type = 'triangle';
-                osc.frequency.value = freq;
-                
-                // 時間差播放
-                const startTime = now + i * 0.1;
-                const duration = 0.8;
-                
-                gain.gain.setValueAtTime(0, startTime);
-                gain.gain.linearRampToValueAtTime(0.15, startTime + 0.05);
-                gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-
-                osc.connect(gain);
-                gain.connect(audioCtx.destination);
-                osc.start(startTime);
-                osc.stop(startTime + duration);
+            [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+                setTimeout(() => playNote(f, 0.8, 'triangle', 0.15), i * 100);
             });
         }
 
-        // 3. 貓叫聲 (模擬)
-        function playMeow() {
-            if (isMuted || !audioCtx) return;
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine'; // 貓叫通常接近正弦波
-            
-            // 頻率變化：從中音滑到高音再滑下來 (Me-ow)
-            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-            osc.frequency.linearRampToValueAtTime(1200, audioCtx.currentTime + 0.15); // Me...
-            osc.frequency.linearRampToValueAtTime(600, audioCtx.currentTime + 0.4);  // ...ow
-            
-            gain.gain.setValueAtTime(0, audioCtx.currentTime);
-            gain.gain.linearRampToValueAtTime(0.2, audioCtx.currentTime + 0.1);
-            gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
-
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.5);
+        function toggleSound() {
+            isMuted = !isMuted;
+            document.getElementById('sound-icon').className = isMuted ? 'ph-fill ph-speaker-simple-slash' : 'ph-fill ph-speaker-simple-high';
+            initAudio();
         }
 
-        /* --- 遊戲邏輯 --- */
-
-        // 貓咪點擊互動
-        function meow(event) {
-            initAudio(); // 確保聲音啟動
-            playMeow();  // 播放貓叫
-            
-            const x = event.clientX / window.innerWidth;
-            const y = event.clientY / window.innerHeight;
-
-            confetti({
-                particleCount: 30,
-                spread: 60,
-                origin: { x: x, y: y }, 
-                colors: ['#FF69B4', '#FFD700', '#FFFFFF'],
-                shapes: ['circle'], 
-                scalar: 1.2,
-                drift: 0,
-                gravity: 0.8
-            });
-        }
-
-        function createSnow() {
-            const container = document.getElementById('snow-container');
-            for(let i=0; i<30; i++) {
-                const flake = document.createElement('div');
-                flake.className = 'snowflake';
-                flake.innerHTML = '❄';
-                flake.style.left = Math.random() * 100 + 'vw';
-                flake.style.animationDuration = Math.random() * 3 + 5 + 's';
-                flake.style.opacity = Math.random() * 0.5;
-                flake.style.fontSize = Math.random() * 15 + 15 + 'px'; 
-                flake.style.animationDelay = Math.random() * 5 + 's';
-                container.appendChild(flake);
-            }
-        }
-        createSnow();
-
-        function shuffleArray(array) {
-            for (let i = array.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [array[i], array[j]] = [array[j], array[i]];
-            }
-            return array;
-        }
-
+        // --- 核心邏輯 (公平版) ---
         function generateDerangement(names) {
             let shuffled = [...names];
             let isValid = false;
             let attempts = 0;
 
-            while (!isValid && attempts < 50000) {
+            // 這裡不再有任何 "if (name === 'xxx')" 的限制
+            while (!isValid && attempts < 10000) {
                 attempts++;
                 for (let i = shuffled.length - 1; i > 0; i--) {
                     const j = Math.floor(Math.random() * (i + 1));
                     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
                 }
+                
                 isValid = true;
                 for (let i = 0; i < names.length; i++) {
-                    const giver = names[i];
-                    const receiver = shuffled[i];
-                    if (giver === receiver) { isValid = false; break; }
-                    // 1. 聖雅指定條件
-                    if (giver === "聖雅" && receiver !== "惠雯") { isValid = false; break; }
-                    // 2. 惠雯排除條件
-                    if (giver === "惠雯" && (receiver === "語婕" || receiver === "美如" || receiver === "嘉木" || receiver === "榮耀")) { isValid = false; break; }
+                    // 唯一規則：不可以抽到自己
+                    if (names[i] === shuffled[i]) {
+                        isValid = false;
+                        break;
+                    }
                 }
             }
 
-            if (!isValid) {
-                alert("系統分配失敗(條件過於嚴苛)，請重新整理再試一次。");
-                return {};
-            }
             const map = {};
             names.forEach((name, i) => map[name] = shuffled[i]);
             return map;
         }
 
         function initGame() {
-            initAudio(); // 用戶互動時初始化 AudioContext
+            initAudio();
             const raw = document.getElementById('name-input').value;
             participants = raw.split('\n').map(n => n.trim()).filter(n => n);
-            if (participants.length < 2) {
-                alert('至少需要兩個人才能交換禮物喔！');
-                return;
-            }
+            if (participants.length < 2) return alert('至少需要兩個人！');
+            
             exchangeMap = generateDerangement(participants);
-            remainingGivers = shuffleArray([...participants]);
+            remainingGivers = [...participants].sort(() => Math.random() - 0.5);
+            
             document.getElementById('setup-screen').classList.add('hidden');
-            const gameScreen = document.getElementById('game-screen');
-            gameScreen.classList.remove('hidden');
-            gameScreen.classList.add('flex');
+            document.getElementById('game-screen').classList.remove('hidden');
             renderGiverButtons();
         }
 
         function renderGiverButtons() {
             const grid = document.getElementById('giver-grid');
-            grid.innerHTML = '';
-            if (remainingGivers.length === 0) {
-                grid.innerHTML = '<div class="col-span-full text-center text-white/50 py-10 text-3xl font-bold">🎉 派對圓滿結束！</div>';
-                return;
-            }
+            grid.innerHTML = remainingGivers.length ? '' : '<div class="col-span-full text-center py-10 text-2xl font-bold">🎉 全員交換完畢！</div>';
             remainingGivers.forEach(name => {
                 const btn = document.createElement('button');
-                btn.className = 'neu-btn py-6 px-2 text-2xl md:text-3xl hover:text-[#FFD700] hover:border-[#FFD700] w-full min-h-[100px] break-words transition-colors';
-                btn.innerHTML = name;
+                btn.className = 'neu-btn py-6 px-2 text-xl hover:text-[#FFD700]';
+                btn.innerText = name;
                 btn.onclick = () => selectGiver(name, btn);
                 grid.appendChild(btn);
             });
@@ -566,69 +334,29 @@
 
         function selectGiver(name, btnEl) {
             if (isSpinning) return;
-            initAudio(); // 確保聲音準備好
-            
-            // 播放選擇音效 (短促的高音)
-            playNote(800, 0.05, 'sine', 0.05);
-
+            initAudio();
             document.querySelectorAll('#giver-grid button').forEach(b => b.classList.remove('selected'));
             btnEl.classList.add('selected');
             currentGiver = name;
             
-            const slotSection = document.getElementById('slot-section');
-            slotSection.classList.remove('hidden');
-            setTimeout(() => {
-                slotSection.classList.remove('opacity-0');
-                slotSection.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            }, 50);
-
-            document.getElementById('current-player-name').textContent = name;
-            document.getElementById('slot-reel').innerHTML = '<span class="text-7xl font-bold">?</span>';
-            document.getElementById('slot-window').classList.remove('slot-active');
-            
-            const spinBtn = document.getElementById('spin-btn');
-            spinBtn.disabled = false;
-            spinBtn.innerHTML = '按我抽獎';
-            spinBtn.classList.add('btn-fill-red');
-            spinBtn.classList.remove('bg-black/20', 'text-gray-400', 'shadow-none', 'border-transparent');
+            const slot = document.getElementById('slot-section');
+            slot.classList.remove('hidden');
+            setTimeout(() => slot.classList.remove('opacity-0'), 50);
+            document.getElementById('slot-reel').innerText = '?';
         }
 
         function spin() {
             if (!currentGiver || isSpinning) return;
-            initAudio();
-
             isSpinning = true;
-            const spinBtn = document.getElementById('spin-btn');
-            spinBtn.disabled = true;
-            spinBtn.classList.remove('btn-fill-red');
-            spinBtn.classList.add('bg-black/20', 'text-gray-400', 'shadow-none', 'border-transparent');
-            spinBtn.innerHTML = '<i class="ph-bold ph-spinner animate-spin"></i>';
-
-            const slotWindow = document.getElementById('slot-window');
-            slotWindow.classList.add('slot-active');
-
             const reel = document.getElementById('slot-reel');
-            reel.classList.add('slot-rolling');
-
             const pool = participants.filter(p => p !== currentGiver);
-            let duration = 2500;
+            
             let start = null;
-            let lastTickTime = 0;
-
             function animate(timestamp) {
                 if (!start) start = timestamp;
-                const progress = timestamp - start;
-
-                if (progress < duration) {
-                    const randomName = pool[Math.floor(Math.random() * pool.length)];
-                    reel.innerText = randomName;
-
-                    // 每 100ms 播放一次「答」的聲音，模擬轉動聲
-                    if (timestamp - lastTickTime > 80) {
-                        playTickSound();
-                        lastTickTime = timestamp;
-                    }
-
+                if (timestamp - start < 2000) {
+                    reel.innerText = pool[Math.floor(Math.random() * pool.length)];
+                    playNote(200 + Math.random() * 50, 0.05, 'square', 0.05);
                     requestAnimationFrame(animate);
                 } else {
                     finalize();
@@ -639,73 +367,43 @@
 
         function finalize() {
             const target = exchangeMap[currentGiver];
-            const reel = document.getElementById('slot-reel');
-            
-            reel.innerText = target;
-            reel.classList.remove('slot-rolling');
-            document.getElementById('slot-window').classList.remove('slot-active');
-
-            // 播放中獎音效
+            document.getElementById('slot-reel').innerText = target;
             playWinSound();
-
-            // 慶祝特效
-            confetti({
-                particleCount: 200,
-                spread: 100,
-                origin: { y: 0.6 },
-                colors: ['#FFD700', '#D32F2F', '#ffffff'] 
-            });
-
+            confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
+            
             setTimeout(() => {
-                showModal(target);
+                document.getElementById('result-name').innerText = target;
+                document.getElementById('result-modal').classList.remove('hidden');
                 historyLog.push({ giver: currentGiver, receiver: target });
                 remainingGivers = remainingGivers.filter(n => n !== currentGiver);
             }, 800);
-
             isSpinning = false;
         }
 
-        function showModal(name) {
-            document.getElementById('result-name').innerText = name;
-            const modal = document.getElementById('result-modal');
-            modal.classList.remove('hidden');
-        }
-
         function closeResult() {
-            // 關閉時的音效
-            playNote(400, 0.1, 'sine', 0.05);
-
             document.getElementById('result-modal').classList.add('hidden');
-            
-            const slotSection = document.getElementById('slot-section');
-            slotSection.classList.add('opacity-0');
-            setTimeout(() => slotSection.classList.add('hidden'), 500);
-            
-            currentGiver = null;
+            document.getElementById('slot-section').classList.add('hidden');
             renderGiverButtons();
+        }
 
-            if (remainingGivers.length === 0) {
-                setTimeout(() => {
-                    confetti({ particleCount: 500, spread: 360, startVelocity: 60 });
-                    alert("🎄 聖誕快樂！所有人都交換完畢囉！");
-                }, 500);
+        function meow(e) {
+            initAudio();
+            playNote(800, 0.2, 'sine', 0.1);
+            confetti({ particleCount: 20, origin: { x: e.clientX/innerWidth, y: e.clientY/innerHeight } });
+        }
+
+        function createSnow() {
+            const container = document.getElementById('snow-container');
+            for(let i=0; i<20; i++) {
+                const flake = document.createElement('div');
+                flake.className = 'snowflake';
+                flake.innerText = '❄';
+                flake.style.left = Math.random() * 100 + 'vw';
+                flake.style.animationDuration = Math.random() * 3 + 4 + 's';
+                container.appendChild(flake);
             }
         }
-
-        function showHistory() {
-            if (historyLog.length === 0) return alert("目前沒有紀錄");
-            let msg = "📜 交換紀錄：\n";
-            historyLog.forEach(log => {
-                msg += `${log.giver} -> ${log.receiver}\n`;
-            });
-            alert(msg);
-        }
-
-        function resetGame() {
-            if(confirm("確定要重置遊戲嗎？")) {
-                location.reload();
-            }
-        }
+        createSnow();
     </script>
 </body>
 </html>
