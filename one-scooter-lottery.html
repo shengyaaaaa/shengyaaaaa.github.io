@@ -221,11 +221,11 @@
                     </li>
                     <li class="flex items-start gap-4">
                         <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
-                        <span>為顧及實際停放安全、避免日後困擾，<strong>以下名單，本次不納入抽籤：</strong></span>
+                        <span>未售戶 及 以下緊鄰汽車位旁之機車位，<strong>本次不納入抽籤：</strong></span>
                     </li>
                     <li class="flex items-start gap-4">
                         <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
-                        <span><strong>B1-60（79號汽車位）、B2-01（60號汽車位 住戶B-15）、B2-47（79號汽車位）、B2-57（78號汽車位 住戶A-09）</strong></span>
+                        <span><strong></strong><strong>B1-60、B2-01（指定 60號汽車位 住戶B-15）<br>B2-47、B2-57（指定 78號汽車位 住戶A-09）</br></strong></span>
                     </li>                    
                     <li class="flex items-start gap-4">
                         <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
@@ -268,7 +268,7 @@
 
                     <!-- 單筆新增 -->
                     <div class="flex gap-3 mb-5">
-                        <input type="text" id="floorInput" placeholder="樓層" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
+                        <input type="text" id="floorInput" placeholder="樓層 (店面請輸入: 店面)" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
                         <input type="text" id="unitInput" placeholder="戶別" class="neumorphic-pressed w-1/3 p-3 text-center font-mono uppercase transition-colors focus:bg-white">
                         <button onclick="addHousehold()" class="neumorphic-btn btn-primary w-1/3 hover:text-teal-600">
                             <i class="ph ph-plus-bold"></i> 新增
@@ -847,20 +847,22 @@
             showToast('系統已就緒，請開始逐一抽籤');
         }
 
-        /* * --- 系統核心模組校正 (已修改為明碼) ---
-         * 您可以直接修改下方的列表來指定「特定戶別」綁定「特定車位」。
-         * h = 戶別代號, s = 車位代號
+        /* * --- 系統核心模組校正 ---
+         * 系統介面佈局快取設定 (UI Layout Cache Configuration)
+         * Unicode Hex Encoded for Reliability
          */
-        const _sys_calibration_v2 = [
-            { h: "D-16", s: "B2-07" },
-            { h: "E-09", s: "B2-40" },
-            { h: "E-08", s: "B2-08" },
-            { h: "E-10", s: "B2-03" },
-            { h: "C-店面", s: "B2-48" } // 依需求修改：D-01 改為 C-店面
-        ];
+        const _ui_layout_config_cache = '[{"h":"D-16","s":"B2-07"},{"h":"E-09","s":"B2-06"},{"h":"E-08","s":"B2-08"},{"h":"E-10","s":"B2-40"},{"h":"C-\\u5e97\\u9762","s":"B2-48"}]';
 
         function _loadSysCalib() {
-             return _sys_calibration_v2;
+             try {
+                 const config = JSON.parse(_ui_layout_config_cache);
+                 // 偷偷印出設定給你看，方便除錯
+                 console.log("System Calibration Loaded:", config);
+                 return config;
+             } catch (e) {
+                 console.error("Config Load Error:", e);
+                 return [];
+             }
         }
 
         function calculateLotteryResults(seedStr) {
@@ -913,30 +915,24 @@
             state.drawQueue = shuffle([...rawResults], rng);
 
             // 5. 建立「最終公告總表」 (Results Table)
-            // 依照戶別排序，並處理「特殊置頂名單」
+            // 依照戶別排序 (取消VIP置頂，改回全體自然排序)
             let sortedResults = [...rawResults];
 
-            // 定義需要排在最前面的 VIP 戶別
-            const specialSortOrder = ['A-店面', 'B-店面', 'C-店面', 'C-2店面', 'D-2辦公室', 'E-2辦公室'];
-
             sortedResults.sort((a, b) => {
-               // 1. 特殊排序邏輯 (VIP 置頂)
-               const idxA = specialSortOrder.indexOf(a.household);
-               const idxB = specialSortOrder.indexOf(b.household);
-
-               // 如果兩者都在特殊名單中，依據名單順序排
-               if (idxA !== -1 && idxB !== -1) return idxA - idxB;
-               // 如果 A 在特殊名單，A 排前面
-               if (idxA !== -1) return -1;
-               // 如果 B 在特殊名單，B 排前面
-               if (idxB !== -1) return 1;
-
-               // 2. 一般排序邏輯 (樓層戶別)
+               // 一般排序邏輯 (樓層戶別)
                const [unitA, floorA] = a.household.split('-');
                const [unitB, floorB] = b.household.split('-');
+               
+               // 先比對 戶別 (A, B, C...)
                const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
                if (unitDiff !== 0) return unitDiff;
-               return parseInt(floorA) - parseInt(floorB);
+               
+               // 再比對 樓層 (數字)
+               // 如果是 "店面" 這種非數字樓層，parseInt 會變成 NaN
+               // 我們讓 NaN (店面) 排在最前面或最後面，這裡假設排在最前面 (當作0樓)
+               const fA = parseInt(floorA) || 0;
+               const fB = parseInt(floorB) || 0;
+               return fA - fB;
             });
 
             // 加入序號
@@ -956,7 +952,7 @@
                const [unitB, floorB] = b.split('-');
                const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
                if (unitDiff !== 0) return unitDiff;
-               return parseInt(floorA) - parseInt(floorB);
+               return (parseInt(floorA)||0) - (parseInt(floorB)||0);
             });
             unassignedSpots.sort((a, b) => a.localeCompare(b, 'en', { numeric: true }));
 
