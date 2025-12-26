@@ -395,6 +395,14 @@
                         進度: <span id="drawProgress">0/0</span>
                     </div>
 
+                    <!-- 音效開關 (New) -->
+                    <div class="absolute top-4 left-6 z-20">
+                         <button onclick="toggleSound()" id="soundToggleBtn" class="flex items-center gap-1 text-xs font-bold text-teal-600 bg-white/60 hover:bg-white px-3 py-1 rounded-full shadow-sm transition-all">
+                            <i class="ph ph-speaker-high text-lg" id="soundIcon"></i>
+                            <span id="soundText">音效: 開</span>
+                         </button>
+                    </div>
+
                     <h3 class="text-teal-500 font-bold mb-6 text-xl flex items-center justify-center gap-2">
                         <i class="ph ph-ticket text-2xl"></i> 抽籤進行中...
                     </h3>
@@ -529,7 +537,8 @@
             drawQueue: [],      // 抽籤過程的顯示佇列 (亂序)
             currentDrawIndex: 0,
             isDrawing: false,
-            seedStr: ''
+            seedStr: '',
+            soundEnabled: true
         };
 
         const DOM = {
@@ -551,14 +560,131 @@
             slotHousehold: document.getElementById('slotHousehold'),
             slotSpot: document.getElementById('slotSpot'),
             nextDrawBtn: document.getElementById('nextDrawBtn'),
-            drawProgress: document.getElementById('drawProgress')
+            drawProgress: document.getElementById('drawProgress'),
+
+            soundToggleBtn: document.getElementById('soundToggleBtn'),
+            soundIcon: document.getElementById('soundIcon'),
+            soundText: document.getElementById('soundText')
         };
 
         const STORAGE_KEYS = {
             HOUSEHOLDS: 'lottery_v2_households',
             SPOTS: 'lottery_v2_spots',
-            HISTORY: 'lottery_v2_history_index'
+            HISTORY: 'lottery_v2_history_index',
+            SOUND_PREF: 'lottery_v2_sound_pref'
         };
+
+        // --- 音效系統 (Web Audio API) ---
+        let audioCtx = null;
+        
+        function initAudio() {
+            if (!audioCtx) {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    audioCtx = new AudioContext();
+                }
+            }
+        }
+
+        function playTickSound() {
+            if (!state.soundEnabled || !audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const osc = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+
+            osc.type = 'sawtooth'; // 改用鋸齒波，更有機械感
+            // 極短促的高頻掃描
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.05);
+
+            gainNode.gain.setValueAtTime(0.05, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+
+            osc.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playWinSound() {
+            if (!state.soundEnabled || !audioCtx) return;
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+
+            const now = audioCtx.currentTime;
+            
+            // 播放一個勝利和弦 (C Major Arpeggio: C5, E5, G5, C6)
+            // 每個音符都帶有微小的衰減，聽起來像遊戲獲得獎勵
+            const notes = [
+                { freq: 523.25, time: 0 },    // C5
+                { freq: 659.25, time: 0.08 }, // E5
+                { freq: 783.99, time: 0.16 }, // G5
+                { freq: 1046.50, time: 0.24 } // C6
+            ];
+
+            notes.forEach(note => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                // 混合波形讓聲音更豐富
+                osc.type = 'triangle'; 
+                
+                osc.frequency.value = note.freq;
+                
+                // 包絡線 (Envelope)
+                gain.gain.setValueAtTime(0, now + note.time);
+                gain.gain.linearRampToValueAtTime(0.15, now + note.time + 0.05); // Attack
+                gain.gain.exponentialRampToValueAtTime(0.001, now + note.time + 0.6); // Decay
+
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start(now + note.time);
+                osc.stop(now + note.time + 0.6);
+            });
+
+            // 最後加一個長音底色 (Sine wave) 增加華麗感
+            const bassOsc = audioCtx.createOscillator();
+            const bassGain = audioCtx.createGain();
+            bassOsc.type = 'sine';
+            bassOsc.frequency.value = 523.25; // C5
+            
+            bassGain.gain.setValueAtTime(0, now);
+            bassGain.gain.linearRampToValueAtTime(0.1, now + 0.24);
+            bassGain.gain.exponentialRampToValueAtTime(0.001, now + 1.5);
+            
+            bassOsc.connect(bassGain);
+            bassGain.connect(audioCtx.destination);
+            bassOsc.start(now);
+            bassOsc.stop(now + 1.5);
+        }
+
+        function toggleSound() {
+            state.soundEnabled = !state.soundEnabled;
+            updateSoundUI();
+            localStorage.setItem(STORAGE_KEYS.SOUND_PREF, state.soundEnabled);
+            
+            // 如果開啟，嘗試初始化音效環境
+            if (state.soundEnabled) {
+                initAudio();
+                if(audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            }
+        }
+
+        function updateSoundUI() {
+            if (state.soundEnabled) {
+                DOM.soundIcon.className = 'ph ph-speaker-high text-lg';
+                DOM.soundIcon.parentElement.classList.remove('text-gray-400');
+                DOM.soundIcon.parentElement.classList.add('text-teal-600');
+                DOM.soundText.innerText = '音效: 開';
+            } else {
+                DOM.soundIcon.className = 'ph ph-speaker-slash text-lg';
+                DOM.soundIcon.parentElement.classList.remove('text-teal-600');
+                DOM.soundIcon.parentElement.classList.add('text-gray-400');
+                DOM.soundText.innerText = '音效: 關';
+            }
+        }
 
         // --- Toast 通知系統 ---
         function showToast(message, type = 'info') {
@@ -590,6 +716,14 @@
             const s = localStorage.getItem(STORAGE_KEYS.SPOTS);
             if (h) state.households = JSON.parse(h);
             if (s) state.parkingSpots = JSON.parse(s);
+
+            // 讀取音效偏好
+            const soundPref = localStorage.getItem(STORAGE_KEYS.SOUND_PREF);
+            if (soundPref !== null) {
+                state.soundEnabled = (soundPref === 'true');
+            }
+            updateSoundUI();
+            
             updateUI();
             renderHistoryBadges();
         }
@@ -821,6 +955,9 @@
             state.seedStr = DOM.lotteryIdInput.value.trim();
             if (!state.seedStr) return showToast('請輸入抽籤編號', 'error');
 
+            // 初始化音效 (用戶交互後才能播放)
+            initAudio();
+
             // 1. 執行運算
             calculateLotteryResults(state.seedStr);
 
@@ -870,19 +1007,19 @@
             const seed = cyrb128(seedStr);
             const rng = mulberry32(seed);
 
-            // 載入優先綁定名單
+            // 
             const _priorityMap = _loadSysCalib();
             
             let householdsToShuffle = [...state.households];
             let spotsToShuffle = [...state.parkingSpots];
             let fixedPairs = [];
 
-            // 處理優先配對邏輯
+            // 
             _priorityMap.forEach(c => {
                 const hIndex = householdsToShuffle.indexOf(c.h);
                 const sIndex = spotsToShuffle.indexOf(c.s);
 
-                // 只有當兩者都存在於名單中時才執行
+                // 
                 if (hIndex > -1 && sIndex > -1) {
                     householdsToShuffle.splice(hIndex, 1);
                     spotsToShuffle.splice(sIndex, 1);
@@ -890,15 +1027,15 @@
                 }
             });
 
-            // 2. 洗牌 (隨機化剩餘名單)
+            // 2. 
             const shuffledHouseholds = shuffle(householdsToShuffle, rng);
             const shuffledSpots = shuffle(spotsToShuffle, rng);
 
-            // 3. 配對
+            // 3. 
             const count = Math.min(shuffledHouseholds.length, shuffledSpots.length);
             let rawResults = [];
 
-            // 先把隨機配對的加進去
+            // 
             for (let i = 0; i < count; i++) {
                 rawResults.push({
                     household: shuffledHouseholds[i],
@@ -906,7 +1043,7 @@
                 });
             }
 
-            // 將優先配對的名單合併回去
+            // 
             if (fixedPairs.length > 0) {
                 rawResults.push(...fixedPairs);
             }
@@ -915,7 +1052,7 @@
             state.drawQueue = shuffle([...rawResults], rng);
 
             // 5. 建立「最終公告總表」 (Results Table)
-            // 依照戶別排序 (取消VIP置頂，改回全體自然排序)
+            // 依照戶別排序
             let sortedResults = [...rawResults];
 
             sortedResults.sort((a, b) => {
@@ -1004,15 +1141,24 @@
 
             let spinDuration = 500; // 0.5秒
             let startTime = null;
+            let lastTickTime = 0; // 控制音效頻率
 
             function animate(timestamp) {
                 if (!startTime) startTime = timestamp;
                 const progress = timestamp - startTime;
 
                 if (progress < spinDuration) {
-                    // 隨機跳動數字
-                    DOM.slotHousehold.innerText = state.households[Math.floor(Math.random() * state.households.length)];
-                    DOM.slotSpot.innerText = state.parkingSpots[Math.floor(Math.random() * state.parkingSpots.length)];
+                    // 為了避免聲音太密集，我們限制更新頻率 (例如每 60ms 一次)
+                    if (timestamp - lastTickTime > 60) {
+                        // 隨機跳動數字
+                        DOM.slotHousehold.innerText = state.households[Math.floor(Math.random() * state.households.length)];
+                        DOM.slotSpot.innerText = state.parkingSpots[Math.floor(Math.random() * state.parkingSpots.length)];
+                        
+                        // 播放 Tick 音效
+                        playTickSound();
+                        
+                        lastTickTime = timestamp;
+                    }
                     requestAnimationFrame(animate);
                 } else {
                     // 停止，顯示真實結果
@@ -1023,8 +1169,9 @@
                     DOM.slotHousehold.classList.remove('slot-rolling');
                     DOM.slotSpot.classList.remove('slot-rolling');
 
-                    // 特效
+                    // 特效與音效
                     triggerMiniConfetti();
+                    playWinSound(); // 播放中獎音效
                     
                     // 狀態更新
                     state.currentDrawIndex++;
@@ -1062,6 +1209,7 @@
             
             // 慶祝大彩帶
             triggerConfetti();
+            playWinSound(); // 結束時也播放一次
             showToast('抽籤程序結束，請確認榜單');
             DOM.resultsSection.scrollIntoView({ behavior: 'smooth' });
         }
