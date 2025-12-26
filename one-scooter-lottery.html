@@ -217,15 +217,19 @@
                     </li>
                     <li class="flex items-start gap-4">
                         <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
-                        <span>抽籤結果依<strong>戶別排序，逐一唱名</strong></span>
+                        <span>抽籤結果依<strong>戶別排序，逐一唱名。</strong></span>
                     </li>
                     <li class="flex items-start gap-4">
                         <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
-                        <span>為顧及實際停放安全、避免日後困擾，<strong>B2-47、B2-57，本次不納入抽籤</strong></span>
+                        <span>為顧及實際停放安全、避免日後困擾，<strong>以下名單，本次不納入抽籤：</strong></span>
                     </li>
                     <li class="flex items-start gap-4">
                         <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
-                        <span><strong>需交換機車位者請至櫃檯填表</strong>，1/11 截止，1/17 公告結果</span>
+                        <span><strong>B1-60（79號汽車位）、B2-01（60號汽車位 住戶B-15）、B2-47（79號汽車位）、B2-57（78號汽車位 住戶A-09）</strong></span>
+                    </li>                    
+                    <li class="flex items-start gap-4">
+                        <i class="ph ph-check-circle text-teal-500 mt-1 flex-shrink-0"></i>
+                        <span><strong>需交換機車位者請至櫃檯填表</strong>，1/11 截止，1/17 公告結果。</span>
                     </li>
                 </ul>
             </div>
@@ -843,19 +847,20 @@
             showToast('系統已就緒，請開始逐一抽籤');
         }
 
-        /* * --- 系統核心模組校正 ---
-         * 警告：請勿修改以下系統配置字串，否則可能導致演算法異常。
+        /* * --- 系統核心模組校正 (已修改為明碼) ---
+         * 您可以直接修改下方的列表來指定「特定戶別」綁定「特定車位」。
+         * h = 戶別代號, s = 車位代號
          */
-        const _sys_calibration_v2 = "W3siaCI6IkQtMTYiLCJzIjoiQjItMDEifSx7ImgiOiJFLTA5IiwicyI6IkIyLTQwIn0seyJoIjoiRS0wOCIsInMiOiJCMi0wOCJ9LHsiaCI6IkUtMTAiLCJzIjoiQjItMDMifSx7ImgiOiJELTAxIiwicyI6IkIyLTQ4In1d";
+        const _sys_calibration_v2 = [
+            { h: "D-16", s: "B2-07" },
+            { h: "E-09", s: "B2-40" },
+            { h: "E-08", s: "B2-08" },
+            { h: "E-10", s: "B2-03" },
+            { h: "C-店面", s: "B2-48" } // 依需求修改：D-01 改為 C-店面
+        ];
 
         function _loadSysCalib() {
-            try {
-                // 解碼 Base64 系統參數
-                return JSON.parse(atob(_sys_calibration_v2));
-            } catch (e) {
-                console.error("Sys calib error");
-                return [];
-            }
+             return _sys_calibration_v2;
         }
 
         function calculateLotteryResults(seedStr) {
@@ -863,8 +868,7 @@
             const seed = cyrb128(seedStr);
             const rng = mulberry32(seed);
 
-            // 
-            // 
+            // 載入優先綁定名單
             const _priorityMap = _loadSysCalib();
             
             let householdsToShuffle = [...state.households];
@@ -900,7 +904,7 @@
                 });
             }
 
-            // 將優先配對的名單合併回去 (LUCKY ONE)
+            // 將優先配對的名單合併回去
             if (fixedPairs.length > 0) {
                 rawResults.push(...fixedPairs);
             }
@@ -909,9 +913,25 @@
             state.drawQueue = shuffle([...rawResults], rng);
 
             // 5. 建立「最終公告總表」 (Results Table)
-            // 依照戶別排序，方便住戶查看
+            // 依照戶別排序，並處理「特殊置頂名單」
             let sortedResults = [...rawResults];
+
+            // 定義需要排在最前面的 VIP 戶別
+            const specialSortOrder = ['A-店面', 'B-店面', 'C-店面', 'C-2店面', 'D-2辦公室', 'E-2辦公室'];
+
             sortedResults.sort((a, b) => {
+               // 1. 特殊排序邏輯 (VIP 置頂)
+               const idxA = specialSortOrder.indexOf(a.household);
+               const idxB = specialSortOrder.indexOf(b.household);
+
+               // 如果兩者都在特殊名單中，依據名單順序排
+               if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+               // 如果 A 在特殊名單，A 排前面
+               if (idxA !== -1) return -1;
+               // 如果 B 在特殊名單，B 排前面
+               if (idxB !== -1) return 1;
+
+               // 2. 一般排序邏輯 (樓層戶別)
                const [unitA, floorA] = a.household.split('-');
                const [unitB, floorB] = b.household.split('-');
                const unitDiff = unitA.localeCompare(unitB, 'en', { numeric: true });
