@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>車位租賃契約書產生器</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* 改用 Noto Sans TC (黑體) 以呈現現代感 */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap');
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif; 
+            background-color: white; /* 全白背景 */
+        }
+
+        /* A4 尺寸設定 */
+        .page {
+            width: 210mm;
+            min-height: 297mm;
+            padding: 20mm;
+            margin: 0 auto;
+            background: white;
+            position: relative;
+            box-sizing: border-box;
+        }
+
+        /* 填寫的變數樣式 */
+        .variable {
+            color: #000;
+            font-weight: bold;
+            text-decoration: underline; /* Word 支援底線 */
+            padding: 0 2px;
+        }
+        
+        /* 隱藏列印或匯出時不需要的元素 */
+        @media print {
+            @page {
+                size: auto;
+                margin: 0mm; /* 消除瀏覽器預設邊距，由 .page 的 padding 控制 */
+            }
+            body { background: none; margin: 0; }
+            .no-print { display: none !important; }
+            /* 列印時讓寬度滿版，但保留 padding 以免貼邊 */
+            .page { width: 100%; margin: 0; } 
+            .lg\:border-r { border: none !important; }
+        }
+    </style>
+</head>
+<body class="flex flex-col lg:flex-row h-screen overflow-hidden">
+
+    <!-- 左側：輸入表單區 (不列印) -->
+    <div class="no-print w-full lg:w-1/3 h-full overflow-y-auto bg-white border-r border-gray-300 p-6 z-10">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">契約資料輸入</h2>
+            
+            <div class="flex gap-2">
+                <!-- 列印/PDF 按鈕 -->
+                <button onclick="window.print()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded flex items-center gap-2 transition text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                    </svg>
+                    列印/PDF
+                </button>
+                
+                <!-- 匯出 Word 按鈕 -->
+                <button onclick="exportToWord()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-3 rounded flex items-center gap-2 transition text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                    </svg>
+                    匯出 Word
+                </button>
+            </div>
+        </div>
+
+        <form id="contractForm" class="space-y-4">
+            
+            <!-- 立約人 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 border-b pb-1">立約雙方</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">甲方 (出租人)</label>
+                        <input type="text" id="input-landlord" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-blue-500 focus:ring-blue-500" placeholder="姓名">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">乙方 (承租人)</label>
+                        <input type="text" id="input-tenant" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2 focus:border-blue-500 focus:ring-blue-500" placeholder="姓名">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第一條 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 border-b pb-1">第一條：標的物</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">地點 (地址)</label>
+                        <input type="text" id="input-location" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="例：台北市信義區...">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">社區名稱</label>
+                        <input type="text" id="input-community" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="例：幸福社區">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">車位編號</label>
+                            <input type="text" id="input-spot-no" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="例：B1-105">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">車位類型</label>
+                            <select id="input-spot-type" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2">
+                                <option value="平面車位">平面車位</option>
+                                <option value="機械車位">機械車位</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 第二條 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 border-b pb-1">第二條：租賃期間 (民國)</h3>
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="text-sm font-bold w-12">起始：</span>
+                    <input type="number" id="input-start-y" class="w-16 p-1 border rounded" placeholder="114">年
+                    <input type="number" id="input-start-m" class="w-12 p-1 border rounded" placeholder="1">月
+                    <input type="number" id="input-start-d" class="w-12 p-1 border rounded" placeholder="1">日
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold w-12">結束：</span>
+                    <input type="number" id="input-end-y" class="w-16 p-1 border rounded" placeholder="115">年
+                    <input type="number" id="input-end-m" class="w-12 p-1 border rounded" placeholder="12">月
+                    <input type="number" id="input-end-d" class="w-12 p-1 border rounded" placeholder="31">日
+                </div>
+            </div>
+
+            <!-- 第三條 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 border-b pb-1">第三條：租金與押金</h3>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">每月租金 (元)</label>
+                        <input type="text" id="input-rent" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="例：3000">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">繳款期限 (每月幾號前)</label>
+                        <input type="number" id="input-pay-day" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="例：5">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700">押金金額 (元)</label>
+                        <input type="text" id="input-deposit" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm border p-2" placeholder="例：3000">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 簽名欄詳細資料 -->
+            <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                <h3 class="font-bold text-gray-700 mb-3 border-b pb-1">立約人詳細資料</h3>
+                
+                <h4 class="text-sm font-bold text-blue-600 mt-2">甲方 (出租人)</h4>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <input type="text" id="input-landlord-id" placeholder="身分證字號" class="border p-1 rounded">
+                    <input type="text" id="input-landlord-phone" placeholder="電話" class="border p-1 rounded">
+                </div>
+                <input type="text" id="input-landlord-addr" placeholder="地址" class="w-full border p-1 rounded mt-1 text-sm">
+
+                <h4 class="text-sm font-bold text-green-600 mt-4">乙方 (承租人)</h4>
+                <div class="grid grid-cols-2 gap-2 text-sm">
+                    <input type="text" id="input-tenant-id" placeholder="身分證字號" class="border p-1 rounded">
+                    <input type="text" id="input-tenant-phone" placeholder="電話" class="border p-1 rounded">
+                </div>
+                <input type="text" id="input-tenant-addr" placeholder="地址" class="w-full border p-1 rounded mt-1 text-sm">
+
+                <h4 class="text-sm font-bold text-gray-600 mt-4">簽約日期 (留空則手寫)</h4>
+                <div class="flex items-center gap-1 text-sm">
+                    <input type="number" id="input-sign-y" class="w-14 p-1 border rounded" placeholder="年">年
+                    <input type="number" id="input-sign-m" class="w-10 p-1 border rounded" placeholder="月">月
+                    <input type="number" id="input-sign-d" class="w-10 p-1 border rounded" placeholder="日">日
+                </div>
+            </div>
+            
+            <div class="text-xs text-gray-500 mt-4">
+                * 右側預覽將隨輸入自動更新。完成後請點擊上方「列印/PDF」或「匯出 Word」。
+            </div>
+        </form>
+    </div>
+
+    <!-- 右側：預覽區 -->
+    <div class="w-full lg:w-2/3 h-full overflow-y-auto bg-white p-8 flex justify-center">
+        
+        <!-- 這是 A4 紙張本體，也是 Word 匯出的來源 -->
+        <div id="contract-content" class="page text-base leading-relaxed text-justify">
+            
+            <h1 style="text-align: center; font-size: 24pt; font-weight: bold; margin-bottom: 20px;">車位租賃契約書</h1>
+
+            <div style="margin-bottom: 20px; font-size: 14pt;">
+                <p>出租人（以下簡稱甲方）： <span class="variable" id="out-landlord"></span></p>
+                <p>承租人（以下簡稱乙方）： <span class="variable" id="out-tenant"></span></p>
+            </div>
+
+            <p style="margin-bottom: 15px;">茲因甲方願將其所有之停車位出租予乙方，雙方議定條款如下，以資共同遵守：</p>
+
+            <div class="space-y-6">
+                <!-- 第一條 -->
+                <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第一條：租賃標的物</h3>
+                    <ul style="list-style: none; padding-left: 10px; margin: 0;">
+                        <li>地點：<span class="variable" id="out-location"></span>（社區名稱：<span class="variable" id="out-community"></span>）</li>
+                        <li>車位編號：<span class="variable" id="out-spot-no"></span></li>
+                        <li>車位類型：<span class="variable" id="out-spot-type"></span></li>
+                        <li>附屬設備： 無</li>
+                    </ul>
+                </div>
+
+                <!-- 第二條 -->
+                <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第二條：租賃期間</h3>
+                    <p style="padding-left: 10px; margin: 0;">
+                        自民國 <span class="variable" id="out-start-y"></span> 年 
+                        <span class="variable" id="out-start-m"></span> 月 
+                        <span class="variable" id="out-start-d"></span> 日起，
+                        至民國 <span class="variable" id="out-end-y"></span> 年 
+                        <span class="variable" id="out-end-m"></span> 月 
+                        <span class="variable" id="out-end-d"></span> 日止。
+                    </p>
+                </div>
+
+                <!-- 第三條 -->
+                <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第三條：租金與押金</h3>
+                    <ul style="list-style: none; padding-left: 10px; margin: 0;">
+                        <li>租金：每月新台幣 <span class="variable" id="out-rent"></span> 元整。</li>
+                        <li>繳款方式：應於每月 <span class="variable" id="out-pay-day"></span> 日前，將下個月度租金，以現金或轉帳支付給甲方。</li>
+                        <li>押金：新台幣 <span class="variable" id="out-deposit"></span> 元整。</li>
+                        <li>押金於本契約終止，乙方騰空車位，且無積欠費用或損壞賠償後，由甲方無息退還。</li>
+                    </ul>
+                </div>
+
+                <!-- 第四條 -->
+                <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第四條：使用規範</h3>
+                    <ul style="list-style: none; padding-left: 10px; margin: 0;">
+                        <li><strong>專屬使用：</strong>本車位僅供乙方停放汽車使用，不得堆放雜物。</li>
+                        <li><strong>遵守規約：</strong>乙方承諾完全遵守該社區/大樓之住戶規約及停車場管理辦法。若因乙方違反社區規約導致甲方受罰（例如亂丟垃圾、佔用公共空間），罰款由乙方全額負擔。</li>
+                        <li><strong>轉租禁止：</strong>未經甲方同意，乙方不得將車位轉租給他人。</li>
+                    </ul>
+                </div>
+
+                <!-- 第五條 -->
+                <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第五條：保管責任</h3>
+                    <ul style="list-style: none; padding-left: 10px; margin: 0;">
+                        <li>甲方僅出租停車空間，<strong>不負車輛保管責任</strong>。</li>
+                        <li>乙方車輛若於停車場內遭竊、刮傷或因天災受損，甲方不負賠償責任。</li>
+                    </ul>
+                </div>
+
+                <!-- 第六條 -->
+                <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第六條：契約終止</h3>
+                    <ul style="list-style: none; padding-left: 10px; margin: 0;">
+                        <li>租期屆滿或契約終止時，乙方應即將車位騰空（駛離車輛）。</li>
+                        <li>雙方若欲提前終止租約，應於 <strong>一個月前</strong> 通知對方。</li>
+                    </ul>
+                </div>
+                
+                 <!-- 第七條 -->
+                 <div style="margin-bottom: 15px;">
+                    <h3 style="font-weight: bold; font-size: 14pt; margin-bottom: 5px;">第七條：特約事項</h3>
+                    <div style="height: 50px; border-bottom: 1px solid #ccc;"></div>
+                </div>
+            </div>
+
+            <!-- 立契約書人 -->
+            <div style="margin-top: 30px; border-top: 2px solid black; padding-top: 20px;">
+                <h2 style="text-align: center; font-size: 16pt; font-weight: bold; margin-bottom: 20px;">立契約書人</h2>
+                <!-- 使用 Table 排版簽名處，以確保在 Word 中正確顯示 -->
+                <table style="width: 100%; border: none; margin-bottom: 20px;">
+                    <tr style="vertical-align: top;">
+                        <td style="width: 50%; border: none; padding-right: 20px;">
+                            <div style="font-weight: bold; font-size: 14pt; border-bottom: 1px solid #999; margin-bottom: 10px;">【甲方（出租人）】</div>
+                            <p>姓名：<span class="variable" id="out-landlord-sign"></span></p>
+                            <p>身分證字號：<span class="variable" id="out-landlord-id"></span></p>
+                            <p>電話：<span class="variable" id="out-landlord-phone"></span></p>
+                            <p>地址：<span class="variable" id="out-landlord-addr"></span></p>
+                            <div style="margin-top: 40px; border-top: 1px dashed #ccc; padding-top: 5px; color: #666; font-size: 10pt;">
+                                簽章：
+                            </div>
+                        </td>
+                        <td style="width: 50%; border: none; padding-left: 20px;">
+                            <div style="font-weight: bold; font-size: 14pt; border-bottom: 1px solid #999; margin-bottom: 10px;">【乙方（承租人）】</div>
+                            <p>姓名：<span class="variable" id="out-tenant-sign"></span></p>
+                            <p>身分證字號：<span class="variable" id="out-tenant-id"></span></p>
+                            <p>電話：<span class="variable" id="out-tenant-phone"></span></p>
+                            <p>地址：<span class="variable" id="out-tenant-addr"></span></p>
+                            <div style="margin-top: 40px; border-top: 1px dashed #ccc; padding-top: 5px; color: #666; font-size: 10pt;">
+                                簽章：
+                            </div>
+                        </td>
+                    </tr>
+                </table>
+            </div>
+
+            <div style="margin-top: 30px; text-align: center; font-size: 14pt;">
+                中 華 民 國 
+                <span class="variable" style="margin: 0 10px;" id="out-sign-y"></span> 年 
+                <span class="variable" style="margin: 0 10px;" id="out-sign-m"></span> 月 
+                <span class="variable" style="margin: 0 10px;" id="out-sign-d"></span> 日
+            </div>
+
+            <!-- 收款紀錄表 -->
+            <div style="margin-top: 40px; page-break-inside: avoid;">
+                <h4 style="font-weight: bold; text-align: center; margin-bottom: 10px;">收款紀錄表</h4>
+                <table style="width: 100%; border-collapse: collapse; text-align: center; font-size: 10pt;">
+                    <thead>
+                        <tr style="background-color: #f0f0f0;">
+                            <th style="border: 1px solid black; padding: 8px; width: 25%;">收款日期</th>
+                            <th style="border: 1px solid black; padding: 8px; width: 25%;">金額</th>
+                            <th style="border: 1px solid black; padding: 8px; width: 25%;">明細</th>
+                            <th style="border: 1px solid black; padding: 8px; width: 25%;">甲方簽收</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- 空白行供手寫 -->
+                        <tr>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                            <td style="border: 1px solid black; padding: 12px;">&nbsp;</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // 定義對應關係 [Input ID, Output ID]
+        const fields = [
+            ['input-landlord', 'out-landlord'],
+            ['input-landlord', 'out-landlord-sign'],
+            ['input-tenant', 'out-tenant'],
+            ['input-tenant', 'out-tenant-sign'],
+            ['input-location', 'out-location'],
+            ['input-community', 'out-community'],
+            ['input-spot-no', 'out-spot-no'],
+            ['input-spot-type', 'out-spot-type'],
+            ['input-start-y', 'out-start-y'],
+            ['input-start-m', 'out-start-m'],
+            ['input-start-d', 'out-start-d'],
+            ['input-end-y', 'out-end-y'],
+            ['input-end-m', 'out-end-m'],
+            ['input-end-d', 'out-end-d'],
+            ['input-rent', 'out-rent'],
+            ['input-pay-day', 'out-pay-day'],
+            ['input-deposit', 'out-deposit'],
+            ['input-landlord-id', 'out-landlord-id'],
+            ['input-landlord-phone', 'out-landlord-phone'],
+            ['input-landlord-addr', 'out-landlord-addr'],
+            ['input-tenant-id', 'out-tenant-id'],
+            ['input-tenant-phone', 'out-tenant-phone'],
+            ['input-tenant-addr', 'out-tenant-addr'],
+            ['input-sign-y', 'out-sign-y'],
+            ['input-sign-m', 'out-sign-m'],
+            ['input-sign-d', 'out-sign-d']
+        ];
+
+        // 綁定事件監聽器
+        function updatePreview() {
+            fields.forEach(([inputId, outputId]) => {
+                const input = document.getElementById(inputId);
+                const output = document.getElementById(outputId);
+                if (input && output) {
+                    if (input.value) {
+                        output.textContent = input.value;
+                    } else {
+                        output.innerHTML = "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"; // 預設空格
+                    }
+                }
+            });
+        }
+
+        document.querySelectorAll('input, select').forEach(el => {
+            el.addEventListener('input', updatePreview);
+        });
+
+        // 初始化
+        updatePreview();
+
+        // 匯出 Word 功能
+        function exportToWord() {
+            // 取得合約內容的 HTML
+            const content = document.getElementById('contract-content').innerHTML;
+
+            // 構建包含必要樣式的完整 HTML 結構
+            // 這裡我們直接內嵌最基本的 CSS，確保 Word 能看懂
+            const header = `
+                <html xmlns:o='urn:schemas-microsoft-com:office:office' 
+                      xmlns:w='urn:schemas-microsoft-com:office:word' 
+                      xmlns='http://www.w3.org/TR/REC-html40'>
+                <head>
+                    <meta charset='utf-8'>
+                    <title>車位租賃契約書</title>
+                    <style>
+                        body { font-family: 'Microsoft JhengHei', 'PMingLiU', sans-serif; }
+                        table { border-collapse: collapse; width: 100%; }
+                        td, th { border: 1px solid black; }
+                        .variable { text-decoration: underline; }
+                    </style>
+                </head>
+                <body>
+            `;
+            
+            const footer = "</body></html>";
+            const sourceHTML = header + content + footer;
+
+            const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(sourceHTML);
+            
+            const fileDownload = document.createElement("a");
+            document.body.appendChild(fileDownload);
+            fileDownload.href = source;
+            fileDownload.download = '車位租賃契約書.doc';
+            fileDownload.click();
+            document.body.removeChild(fileDownload);
+        }
+    </script>
+</body>
+</html>
