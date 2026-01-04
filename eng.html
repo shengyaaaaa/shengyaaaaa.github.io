@@ -233,10 +233,95 @@
             };
 
             // --- Data ---
-            const PRESET_TOPICS = ["High-End Audio (高級音響)", "Business Negotiation (商務談判)", "Daily Conversation (日常會話)", "Travel & Culture (旅遊與文化)", "Coffee Brewing (手沖咖啡)", "Psychology (心理學)", "Tech Trends (科技趨勢)", "Health & Fitness (健康與健身)", "Movie Reviews (電影評論)", "Investment (投資理財)"];
-            const RANDOM_TOPICS = ["Minimalism", "Jazz History", "Sustainability", "Space", "Wine", "Digital Marketing", "History", "AI", "Yoga", "Photography", "Economics", "Design"];
             
-            // Restoring detailed level descriptions
+            // SMART RANDOM LOGIC START
+            // 1. Define Metadata for each topic (Category & Base Weight)
+            const TOPIC_METADATA = {
+                "Urban Dynamics": { category: "Society", weight: 1.0 },
+                "Human Connection": { category: "Introspective", weight: 1.2 }, // Higher appeal
+                "Daily Rituals": { category: "Introspective", weight: 1.2 },
+                "Digital Balance": { category: "Abstract", weight: 0.9 },
+                "Slow Living": { category: "Lifestyle", weight: 1.1 },
+                "Cultural Identity": { category: "Society", weight: 1.0 },
+                "The Creative Mind": { category: "Introspective", weight: 1.0 },
+                "Modern Workspace": { category: "Society", weight: 1.0 },
+                "Food & Memory": { category: "Sensory", weight: 1.3 }, // High appeal
+                "Future Perspectives": { category: "Abstract", weight: 0.9 },
+                "Music & Emotion": { category: "Sensory", weight: 1.2 }, // Audiophile pref
+                "Analog Nostalgia": { category: "Sensory", weight: 1.1 }, // Audiophile pref
+                "Travel & Discovery": { category: "Lifestyle", weight: 1.2 },
+                "Social Behavior": { category: "Society", weight: 0.9 },
+                "Sustainable Choices": { category: "Abstract", weight: 0.9 },
+                "Generational Shifts": { category: "Society", weight: 0.9 },
+                "The Power of Story": { category: "Abstract", weight: 1.0 },
+                "Mental Wellness": { category: "Introspective", weight: 1.1 },
+                "Passion Projects": { category: "Lifestyle", weight: 1.1 },
+                "Education Trends": { category: "Society", weight: 0.9 },
+                "Animal Companionship": { category: "Sensory", weight: 1.2 },
+                "The Art of Listening": { category: "Introspective", weight: 1.1 }, // Audiophile pref
+                "Architectural Spaces": { category: "Sensory", weight: 1.0 },
+                "Financial Psychology": { category: "Abstract", weight: 0.8 }, // Heavier topic
+                "Mythology & Folklore": { category: "Abstract", weight: 1.0 }
+            };
+
+            const PRESET_TOPICS = Object.keys(TOPIC_METADATA);
+            
+            // Weighted Random Selector
+            const handleSmartRandom = () => {
+                // Get history
+                const lastTopicName = localStorage.getItem('last_topic_name');
+                const lastCategory = localStorage.getItem('last_topic_category');
+
+                // Calculate weights dynamically
+                let candidates = [];
+                let totalWeight = 0;
+
+                PRESET_TOPICS.forEach(topicName => {
+                    const meta = TOPIC_METADATA[topicName];
+                    let currentWeight = meta.weight;
+
+                    // Rule 1: Never repeat the immediate last topic
+                    if (topicName === lastTopicName) {
+                        currentWeight = 0;
+                    } 
+                    // Rule 2: Soft penalty for same category (30% probability of original)
+                    else if (meta.category === lastCategory) {
+                        currentWeight = currentWeight * 0.3;
+                    }
+
+                    if (currentWeight > 0) {
+                        candidates.push({ name: topicName, ...meta, effectiveWeight: currentWeight });
+                        totalWeight += currentWeight;
+                    }
+                });
+
+                // Roll the dice
+                let random = Math.random() * totalWeight;
+                let selected = null;
+                
+                for (let item of candidates) {
+                    random -= item.effectiveWeight;
+                    if (random <= 0) {
+                        selected = item;
+                        break;
+                    }
+                }
+                
+                // Fallback just in case floating point weirdness
+                if (!selected && candidates.length > 0) selected = candidates[candidates.length - 1];
+
+                // Save decision
+                if (selected) {
+                    setTopic(selected.name);
+                    localStorage.setItem('last_topic_name', selected.name);
+                    localStorage.setItem('last_topic_category', selected.category);
+                    
+                    // Visual feedback (optional console log for debugging)
+                    // console.log(`Selected: ${selected.name} (${selected.category}) | Weight: ${selected.effectiveWeight.toFixed(2)}`);
+                }
+            };
+            // SMART RANDOM LOGIC END
+
             const DIFFICULTY_OPTIONS = [
                 { value: "Novice", label: "新手 (Novice)", sub: "TOEIC 0-200 | A1" },
                 { value: "Beginner", label: "初級 (Beginner)", sub: "TOEIC 200-350 | A2" },
@@ -256,7 +341,6 @@
                 { value: "Fiction", label: "Fiction / Short Story", desc: "Narrative, creative, character-driven, immersive." }
             ];
         
-            const handleRandomTopic = () => setTopic(RANDOM_TOPICS[Math.floor(Math.random() * RANDOM_TOPICS.length)]);
             const handlePresetClick = (preset) => setTopic(preset);
             
             const renderFormattedText = (text) => {
@@ -283,7 +367,6 @@
                 const selectedStyle = STYLE_OPTIONS.find(s => s.value === style);
 
                 // --- VARIETY GENERATOR ---
-                // Randomly select a "lens" or "focus" to avoid repetitive content for the same topic.
                 const angles = [
                     "historical evolution", "future trends and predictions", "psychological and emotional impact",
                     "scientific mechanism/breakdown", "economic and business perspective", "cultural significance",
@@ -386,8 +469,15 @@
 
                 try {
                     const result = await fetchWithRetry();
-                    const textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                    let textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (!textResponse) throw new Error("No content generated");
+
+                    // Fix for JSON parsing error: Remove markdown code fences
+                    // Sometimes the API returns ```json ... ``` or just ``` ... ```
+                    if (textResponse.startsWith('```')) {
+                         textResponse = textResponse.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+                    }
+                    
                     setMaterial(JSON.parse(textResponse));
                 } catch (err) {
                     console.error(err);
@@ -424,7 +514,7 @@
                                     <label className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider opacity-70"><Icons.Music className="w-4 h-4" /> 1. Topic</label>
                                     <div className="flex gap-4">
                                         <div className="relative flex-grow group"><input type="text" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="Enter topic..." className="w-full pl-6 pr-4 py-4 bg-[var(--bg-panel)] rounded-2xl shadow-neumorph-inset text-lg placeholder-opacity-50 focus:outline-none transition-all" style={{ color: 'var(--text-main)' }} onKeyDown={(e) => e.key === 'Enter' && generateMaterial()} /></div>
-                                        <button onClick={handleRandomTopic} className="px-6 rounded-2xl bg-[var(--bg-panel)] shadow-neumorph hover:shadow-neumorph-hover active:shadow-neumorph-inset text-[var(--accent)]"><Icons.Dice5 className="w-6 h-6" /></button>
+                                        <button onClick={handleSmartRandom} title="Smart Shuffle" className="px-6 rounded-2xl bg-[var(--bg-panel)] shadow-neumorph hover:shadow-neumorph-hover active:shadow-neumorph-inset text-[var(--accent)]"><Icons.Dice5 className="w-6 h-6" /></button>
                                     </div>
                                     <div className="flex flex-wrap gap-3 mt-2">{PRESET_TOPICS.map((t) => <button key={t} onClick={() => handlePresetClick(t)} className="text-xs font-medium px-4 py-2 rounded-xl bg-[var(--bg-panel)] opacity-80 shadow-neumorph-sm hover:text-[var(--accent)] hover:opacity-100 active:shadow-neumorph-inset transition-all">{t}</button>)}</div>
                                 </div>
