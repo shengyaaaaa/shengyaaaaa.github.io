@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>團購統計小幫手 - 設計版</title>
+    <title>團購統計小幫手</title>
     <!-- 引入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 引入 Lucide Icons -->
@@ -39,7 +39,8 @@
             background-color: #F3EDE6;
             color: #2D2D2D;
             touch-action: manipulation;
-            overflow-x: hidden; /* 防止裝飾圓圈撐開頁面 */
+            overflow-x: hidden;
+            padding-bottom: 120px;
         }
 
         /* 裝飾背景圓圈 */
@@ -92,9 +93,18 @@
         .animate-slide-up {
             animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+
+        /* 下拉選單樣式 */
+        select.preset-select {
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+            background-position: right 0.5rem center;
+            background-repeat: no-repeat;
+            background-size: 1.5em 1.5em;
+        }
     </style>
 </head>
-<body class="pb-32 relative">
+<body class="relative">
 
     <!-- 背景裝飾 -->
     <div class="deco-circle circle-1"></div>
@@ -106,7 +116,7 @@
             <div>
                 <div class="text-xs font-bold tracking-widest text-charcoal/50 mb-1 uppercase">Group Order</div>
                 <h1 class="text-2xl font-bold text-charcoal flex items-center gap-2">
-                    <span class="bg-charcoal text-paper p-1 rounded">GO</span> 團購小幫手
+                    <span class="bg-charcoal text-paper p-1 rounded">牙隹</span> 團購小幫手
                 </h1>
             </div>
             <div class="flex flex-col items-end">
@@ -120,6 +130,13 @@
 
     <main class="max-w-md mx-auto px-6 mt-4">
         
+        <!-- 團購主題輸入 -->
+        <div class="mb-6 animate-slide-up" style="animation-delay: 0.05s;">
+            <label class="text-xs font-bold text-charcoal/40 uppercase tracking-wider pl-2">Group Title</label>
+            <input type="text" id="input-title" placeholder="輸入團購主題 (例如: 週五飲料團)" 
+                   class="w-full bg-transparent border-b-2 border-charcoal/10 text-xl font-bold text-charcoal py-2 px-2 focus:outline-none focus:border-accent transition-colors placeholder:text-charcoal/20">
+        </div>
+
         <!-- 輸入區塊 (卡片設計) -->
         <div class="bg-card rounded-4xl p-6 shadow-xl shadow-charcoal/5 mb-8 animate-slide-up relative overflow-hidden">
             <!-- 卡片頂部裝飾線 -->
@@ -146,6 +163,26 @@
                     </div>
                     <div id="menu-container" class="flex flex-wrap gap-2 transition-all">
                         <!-- 菜單 JS 生成 -->
+                    </div>
+                    
+                    <!-- 菜單管理區域 (編輯模式時顯示) -->
+                    <div id="menu-preset-area" class="hidden mt-3 pt-3 border-t border-charcoal/10 bg-charcoal/5 rounded-xl p-3">
+                        <div class="text-xs font-bold text-charcoal/40 mb-2 flex items-center gap-1">
+                            <i data-lucide="save" class="w-3 h-3"></i> 常用菜單組合
+                        </div>
+                        <!-- 載入 -->
+                        <div class="flex gap-2 mb-2">
+                            <select id="menu-preset-select" class="preset-select flex-1 text-sm rounded-lg border border-charcoal/10 bg-white p-2 outline-none focus:border-accent text-charcoal">
+                                <option value="">選擇要載入的菜單...</option>
+                            </select>
+                            <button type="button" onclick="loadMenuPreset()" class="bg-charcoal text-white px-3 rounded-lg text-xs font-bold hover:bg-black transition-colors">載入</button>
+                            <button type="button" onclick="deleteMenuPreset()" class="text-red-500 hover:text-red-700 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                        <!-- 儲存 -->
+                        <div class="flex gap-2">
+                            <input id="menu-preset-name" type="text" placeholder="輸入名稱 (如: 50嵐)" class="flex-1 text-sm rounded-lg border border-charcoal/10 bg-white p-2 outline-none focus:border-accent">
+                            <button type="button" onclick="saveMenuPreset()" class="bg-accent text-white px-3 rounded-lg text-xs font-bold hover:bg-accent-dark transition-colors whitespace-nowrap">存為新菜單</button>
+                        </div>
                     </div>
                 </div>
 
@@ -179,8 +216,30 @@
                 </div>
 
                 <!-- 快速標籤 -->
-                <div id="tags-container" class="mt-1 flex flex-wrap gap-2 transition-all">
-                    <!-- 標籤 JS 生成 -->
+                <div>
+                    <div id="tags-container" class="mt-1 flex flex-wrap gap-2 transition-all">
+                        <!-- 標籤 JS 生成 -->
+                    </div>
+
+                    <!-- 備註管理區域 (編輯模式時顯示) -->
+                    <div id="tag-preset-area" class="hidden mt-3 pt-3 border-t border-charcoal/10 bg-charcoal/5 rounded-xl p-3">
+                        <div class="text-xs font-bold text-charcoal/40 mb-2 flex items-center gap-1">
+                            <i data-lucide="save" class="w-3 h-3"></i> 常用選項組合
+                        </div>
+                        <!-- 載入 -->
+                        <div class="flex gap-2 mb-2">
+                            <select id="tag-preset-select" class="preset-select flex-1 text-sm rounded-lg border border-charcoal/10 bg-white p-2 outline-none focus:border-accent text-charcoal">
+                                <option value="">選擇要載入的選項...</option>
+                            </select>
+                            <button type="button" onclick="loadTagPreset()" class="bg-charcoal text-white px-3 rounded-lg text-xs font-bold hover:bg-black transition-colors">載入</button>
+                            <button type="button" onclick="deleteTagPreset()" class="text-red-500 hover:text-red-700 p-2"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                        </div>
+                        <!-- 儲存 -->
+                        <div class="flex gap-2">
+                            <input id="tag-preset-name" type="text" placeholder="輸入名稱 (如: 飲料甜度)" class="flex-1 text-sm rounded-lg border border-charcoal/10 bg-white p-2 outline-none focus:border-accent">
+                            <button type="button" onclick="saveTagPreset()" class="bg-accent text-white px-3 rounded-lg text-xs font-bold hover:bg-accent-dark transition-colors whitespace-nowrap">存為新組合</button>
+                        </div>
+                    </div>
                 </div>
 
                 <button type="submit" class="w-full bg-charcoal hover:bg-black text-white font-bold py-4 rounded-2xl shadow-lg shadow-charcoal/20 transition-all active:scale-95 flex justify-center items-center gap-2 mt-4 group">
@@ -189,7 +248,7 @@
             </form>
         </div>
 
-        <!-- 頁籤切換 (極簡風格) -->
+        <!-- 頁籤切換 -->
         <div class="flex mb-6 bg-charcoal/5 p-1 rounded-2xl">
             <button type="button" id="tab-list" class="flex-1 py-3 text-sm font-bold rounded-xl flex justify-center items-center gap-2 transition-all bg-card text-charcoal shadow-sm">
                 <i data-lucide="list" class="w-4 h-4"></i> 清單 (<span id="count-badge">0</span>)
@@ -208,30 +267,70 @@
 
     <!-- 底部浮動按鈕 -->
     <div class="fixed bottom-6 left-6 right-6 z-20">
-        <div class="max-w-md mx-auto flex gap-3">
-            <button type="button" id="btn-clear" class="w-14 h-14 bg-white border-2 border-charcoal/10 hover:border-accent text-charcoal hover:text-accent rounded-full font-medium transition-colors flex justify-center items-center shadow-lg active:scale-90">
+        <div class="max-w-md mx-auto flex gap-2">
+            <!-- 刪除按鈕 -->
+            <button type="button" id="btn-clear" class="w-14 h-14 bg-white border-2 border-charcoal/10 hover:border-red-500 hover:text-red-500 text-charcoal rounded-2xl font-medium transition-colors flex justify-center items-center shadow-lg active:scale-90 flex-shrink-0">
                 <i data-lucide="trash-2" class="w-5 h-5"></i>
             </button>
-            <button type="button" id="btn-copy" class="flex-1 bg-accent hover:bg-accent-dark text-white py-3 rounded-full font-bold transition-colors flex justify-center items-center gap-2 shadow-lg shadow-accent/30 active:scale-95">
-                <i data-lucide="copy" class="w-5 h-5"></i> 複製給群組
-            </button>
+            
+            <!-- 匯出按鈕群組 -->
+            <div class="flex-1 flex gap-2">
+                <button type="button" id="btn-checklist" class="flex-1 bg-charcoal hover:bg-black text-white py-3 rounded-2xl font-bold transition-colors flex flex-col justify-center items-center shadow-lg shadow-charcoal/30 active:scale-95 text-sm">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="printer" class="w-4 h-4"></i> <span>列印核對單</span>
+                    </div>
+                </button>
+
+                <button type="button" id="btn-copy" class="flex-[1.2] bg-accent hover:bg-accent-dark text-white py-3 rounded-2xl font-bold transition-colors flex flex-col justify-center items-center shadow-lg shadow-accent/30 active:scale-95 text-sm">
+                    <div class="flex items-center gap-1.5">
+                        <i data-lucide="copy" class="w-4 h-4"></i> <span>複製給群組</span>
+                    </div>
+                </button>
+            </div>
         </div>
     </div>
 
-    <!-- JavaScript 邏輯 (完全保留原有功能) -->
+    <!-- JavaScript 邏輯 -->
     <script>
         // --- 初始化資料與狀態 ---
-        const defaultTags = ["微糖", "半糖", "無糖", "少冰", "去冰", "溫", "熱", "加辣", "不加蔥"];
+        const defaultTags = ["微糖", "半糖", "無糖", "少冰", "去冰", "溫", "熱"];
         const defaultMenu = [
             { name: "珍珠奶茶", price: 50 },
             { name: "紅茶", price: 30 },
             { name: "拿鐵", price: 60 }
         ];
         
+        // 預設的菜單組合
+        const defaultMenuPresets = {
+            "飲料店": [
+                { name: "珍珠奶茶", price: 50 },
+                { name: "紅茶", price: 30 },
+                { name: "綠茶", price: 30 },
+                { name: "拿鐵", price: 60 }
+            ],
+            "便當店": [
+                { name: "雞腿飯", price: 100 },
+                { name: "排骨飯", price: 90 },
+                { name: "招牌飯", price: 80 }
+            ]
+        };
+
+        // 預設的選項組合
+        const defaultTagPresets = {
+            "飲料甜度冰塊": ["全糖", "半糖", "微糖", "無糖", "正常冰", "少冰", "去冰", "溫", "熱"],
+            "麵食選項": ["不加蔥", "不加香菜", "加辣", "大碗", "小碗"]
+        };
+
         let state = {
             orders: JSON.parse(localStorage.getItem('groupOrders')) || [],
             tags: JSON.parse(localStorage.getItem('groupOrderTags')) || defaultTags,
             menuItems: JSON.parse(localStorage.getItem('groupOrderMenu')) || defaultMenu,
+            title: localStorage.getItem('groupOrderTitle') || '',
+            
+            // 新增：組合 presets
+            menuPresets: JSON.parse(localStorage.getItem('groupOrderMenuPresets')) || defaultMenuPresets,
+            tagPresets: JSON.parse(localStorage.getItem('groupOrderTagPresets')) || defaultTagPresets,
+
             activeTab: 'list', 
             isEditingTags: false,
             isEditingMenu: false
@@ -250,19 +349,33 @@
                 item: document.getElementById('input-item'),
                 note: document.getElementById('input-note')
             },
+            inputTitle: document.getElementById('input-title'),
             tagsContainer: document.getElementById('tags-container'),
             menuContainer: document.getElementById('menu-container'),
             btnToggleEditTags: document.getElementById('btn-toggle-edit-tags'),
             tagEditText: document.getElementById('tag-edit-text'),
             btnToggleEditMenu: document.getElementById('btn-toggle-edit-menu'),
             menuEditText: document.getElementById('menu-edit-text'),
+            
+            // 新增：管理區域元素
+            menuPresetArea: document.getElementById('menu-preset-area'),
+            menuPresetSelect: document.getElementById('menu-preset-select'),
+            menuPresetName: document.getElementById('menu-preset-name'),
+            tagPresetArea: document.getElementById('tag-preset-area'),
+            tagPresetSelect: document.getElementById('tag-preset-select'),
+            tagPresetName: document.getElementById('tag-preset-name'),
+
             tabList: document.getElementById('tab-list'),
             tabSummary: document.getElementById('tab-summary'),
             countBadge: document.getElementById('count-badge'),
             contentArea: document.getElementById('content-area'),
             btnClear: document.getElementById('btn-clear'),
-            btnCopy: document.getElementById('btn-copy')
+            btnCopy: document.getElementById('btn-copy'),
+            btnChecklist: document.getElementById('btn-checklist')
         };
+
+        // --- 初始化 ---
+        els.inputTitle.value = state.title;
 
         // --- 核心與渲染 ---
 
@@ -270,8 +383,15 @@
             localStorage.setItem('groupOrders', JSON.stringify(state.orders));
             localStorage.setItem('groupOrderTags', JSON.stringify(state.tags));
             localStorage.setItem('groupOrderMenu', JSON.stringify(state.menuItems));
+            localStorage.setItem('groupOrderMenuPresets', JSON.stringify(state.menuPresets)); // Save Presets
+            localStorage.setItem('groupOrderTagPresets', JSON.stringify(state.tagPresets));   // Save Presets
             render();
         }
+
+        els.inputTitle.addEventListener('input', (e) => {
+            state.title = e.target.value;
+            localStorage.setItem('groupOrderTitle', state.title);
+        });
 
         function calculateTotal() {
             return state.orders.reduce((sum, order) => sum + (order.price * order.quantity), 0);
@@ -284,6 +404,7 @@
 
             renderTags();
             renderMenu();
+            renderPresetOptions(); // 渲染下拉選單
 
             if (state.orders.length === 0) {
                 renderEmptyState();
@@ -295,6 +416,22 @@
             
             updateTabStyles();
             lucide.createIcons();
+        }
+
+        function renderPresetOptions() {
+            // Render Menu Presets
+            let menuHtml = '<option value="">選擇要載入的菜單...</option>';
+            for (let name in state.menuPresets) {
+                menuHtml += `<option value="${name}">${name}</option>`;
+            }
+            els.menuPresetSelect.innerHTML = menuHtml;
+
+            // Render Tag Presets
+            let tagHtml = '<option value="">選擇要載入的選項...</option>';
+            for (let name in state.tagPresets) {
+                tagHtml += `<option value="${name}">${name}</option>`;
+            }
+            els.tagPresetSelect.innerHTML = tagHtml;
         }
 
         function renderEmptyState() {
@@ -409,15 +546,16 @@
         }
 
         function renderMenu() {
-            // Style logic for Edit Mode
             if (state.isEditingMenu) {
-                els.menuContainer.classList.add('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.menuContainer.classList.add('bg-charcoal/5', 'p-3', 'rounded-t-xl');
                 els.menuEditText.textContent = '完成';
                 els.btnToggleEditMenu.classList.add('text-accent');
+                els.menuPresetArea.classList.remove('hidden'); // 顯示管理區
             } else {
-                els.menuContainer.classList.remove('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.menuContainer.classList.remove('bg-charcoal/5', 'p-3', 'rounded-t-xl');
                 els.menuEditText.textContent = '編輯';
                 els.btnToggleEditMenu.classList.remove('text-accent');
+                els.menuPresetArea.classList.add('hidden'); // 隱藏管理區
             }
 
             let html = '';
@@ -451,13 +589,15 @@
 
         function renderTags() {
             if (state.isEditingTags) {
-                els.tagsContainer.classList.add('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.tagsContainer.classList.add('bg-charcoal/5', 'p-3', 'rounded-t-xl');
                 els.tagEditText.textContent = '完成';
                 els.btnToggleEditTags.classList.add('text-accent');
+                els.tagPresetArea.classList.remove('hidden'); // 顯示管理區
             } else {
-                els.tagsContainer.classList.remove('bg-charcoal/5', 'p-3', 'rounded-xl');
+                els.tagsContainer.classList.remove('bg-charcoal/5', 'p-3', 'rounded-t-xl');
                 els.tagEditText.textContent = '選項';
                 els.btnToggleEditTags.classList.remove('text-accent');
+                els.tagPresetArea.classList.add('hidden'); // 隱藏管理區
             }
 
             let html = '';
@@ -517,7 +657,21 @@
                 .replace(/'/g, "&#039;");
         }
 
-        // --- 事件處理 (邏輯不變) ---
+        function copyToClipboard(text, successMessage) {
+            navigator.clipboard.writeText(text)
+                .then(() => alert(successMessage))
+                .catch(() => {
+                    const ta = document.createElement("textarea");
+                    ta.value = text;
+                    document.body.appendChild(ta);
+                    ta.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(ta);
+                    alert(successMessage);
+                });
+        }
+
+        // --- 事件處理 ---
         els.form.addEventListener('submit', (e) => {
             e.preventDefault();
             const qty = Number(els.inputs.quantity.value) > 0 ? Number(els.inputs.quantity.value) : 1;
@@ -545,6 +699,7 @@
             }
         };
 
+        // Menu CRUD
         els.btnToggleEditMenu.addEventListener('click', () => { state.isEditingMenu = !state.isEditingMenu; render(); });
         window.addNewMenu = () => {
             const name = document.getElementById('new-menu-name').value.trim();
@@ -554,6 +709,37 @@
         window.deleteMenu = (index) => { state.menuItems.splice(index, 1); saveState(); };
         window.applyMenu = (name, price) => { els.inputs.item.value = name; els.inputs.price.value = price; };
 
+        // Menu Preset Logic
+        window.saveMenuPreset = () => {
+            const name = els.menuPresetName.value.trim();
+            if (!name) { alert('請輸入菜單名稱'); return; }
+            if (state.menuItems.length === 0) { alert('目前的菜單是空的，無法儲存'); return; }
+            
+            state.menuPresets[name] = [...state.menuItems];
+            els.menuPresetName.value = '';
+            alert(`已儲存菜單組合：「${name}」`);
+            saveState();
+        };
+
+        window.loadMenuPreset = () => {
+            const name = els.menuPresetSelect.value;
+            if (!name) return;
+            if (confirm(`確定要載入「${name}」嗎？\n目前的菜單將被覆蓋。`)) {
+                state.menuItems = [...state.menuPresets[name]];
+                saveState();
+            }
+        };
+
+        window.deleteMenuPreset = () => {
+            const name = els.menuPresetSelect.value;
+            if (!name) return;
+            if (confirm(`確定要刪除菜單組合「${name}」嗎？`)) {
+                delete state.menuPresets[name];
+                saveState();
+            }
+        };
+
+        // Tag CRUD
         els.btnToggleEditTags.addEventListener('click', () => { state.isEditingTags = !state.isEditingTags; render(); });
         window.addNewTag = () => {
             const val = document.getElementById('new-tag-input').value.trim();
@@ -566,15 +752,57 @@
             els.inputs.note.value = current ? `${current} ${tag}` : tag;
         };
 
+        // Tag Preset Logic
+        window.saveTagPreset = () => {
+            const name = els.tagPresetName.value.trim();
+            if (!name) { alert('請輸入選項組合名稱'); return; }
+            if (state.tags.length === 0) { alert('目前的選項是空的，無法儲存'); return; }
+            
+            state.tagPresets[name] = [...state.tags];
+            els.tagPresetName.value = '';
+            alert(`已儲存選項組合：「${name}」`);
+            saveState();
+        };
+
+        window.loadTagPreset = () => {
+            const name = els.tagPresetSelect.value;
+            if (!name) return;
+            if (confirm(`確定要載入「${name}」嗎？\n目前的選項將被覆蓋。`)) {
+                state.tags = [...state.tagPresets[name]];
+                saveState();
+            }
+        };
+
+        window.deleteTagPreset = () => {
+            const name = els.tagPresetSelect.value;
+            if (!name) return;
+            if (confirm(`確定要刪除選項組合「${name}」嗎？`)) {
+                delete state.tagPresets[name];
+                saveState();
+            }
+        };
+
+
         els.tabList.addEventListener('click', () => { state.activeTab = 'list'; render(); });
         els.tabSummary.addEventListener('click', () => { state.activeTab = 'summary'; render(); });
 
         els.btnClear.addEventListener('click', () => {
-            if (confirm('確定要清空所有訂單嗎？')) { state.orders = []; localStorage.removeItem('groupOrders'); render(); }
+            if (confirm('確定要清空所有訂單嗎？')) { 
+                state.orders = []; 
+                state.title = ''; 
+                localStorage.removeItem('groupOrders'); 
+                localStorage.removeItem('groupOrderTitle');
+                els.inputTitle.value = '';
+                render(); 
+            }
         });
 
+        // 1. 複製給群組 (一般版)
         els.btnCopy.addEventListener('click', () => {
-            let text = `📋 團購清單統計\n------------------\n`;
+            if (state.orders.length === 0) { alert('目前沒有訂單喔！'); return; }
+
+            const titleText = state.title ? `${state.title} ` : '';
+            let text = `📋 ${titleText}團購統計\n------------------\n`;
             const groupedOrders = {};
             state.orders.forEach(order => {
                 const name = order.name.trim();
@@ -608,17 +836,118 @@
             });
             Object.entries(groups).forEach(([key, value]) => { text += `• ${key} x${value.count}\n`; });
 
-            navigator.clipboard.writeText(text)
-                .then(() => alert('訂單已複製！可以貼到 LINE 群組囉！'))
-                .catch(() => {
-                    const ta = document.createElement("textarea");
-                    ta.value = text;
-                    document.body.appendChild(ta);
-                    ta.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(ta);
-                    alert('訂單已複製！可以貼到 LINE 群組囉！');
-                });
+            copyToClipboard(text, '訂單已複製！可以貼到 LINE 群組囉！');
+        });
+
+        // 2. 列印核對單 / 下載 Word
+        els.btnChecklist.addEventListener('click', () => {
+            if (state.orders.length === 0) { alert('目前沒有訂單喔！'); return; }
+
+            const groupedOrders = {};
+            state.orders.forEach(order => {
+                const name = order.name.trim();
+                if (!groupedOrders[name]) groupedOrders[name] = { items: [], total: 0 };
+                groupedOrders[name].items.push(order);
+                groupedOrders[name].total += (order.price * order.quantity);
+            });
+
+            const today = new Date().toLocaleDateString('zh-TW');
+            const printTitle = state.title ? `${state.title} - 核對清單` : '團購核對清單';
+            
+            let tableRows = '';
+            let index = 1;
+            Object.entries(groupedOrders).forEach(([name, data]) => {
+                const itemDetails = data.items.map(o => {
+                    let s = `${o.item}`;
+                    if (o.quantity > 1) s += ` <b>x${o.quantity}</b>`;
+                    s += ` <span style="color:#E65142; font-weight:bold; font-size:0.95em;">$${o.price * o.quantity}</span>`;
+                    if (o.note) s += ` <span style="color:#666; font-size:0.9em">(${o.note})</span>`;
+                    return s;
+                }).join("<br>");
+
+                tableRows += `
+                    <tr>
+                        <td class="center">${index}</td>
+                        <td>${name}</td>
+                        <td>${itemDetails}</td>
+                        <td class="center">$${data.total}</td>
+                        <td class="center"><div class="box"></div></td>
+                        <td class="center"><div class="box"></div></td>
+                    </tr>
+                `;
+                index++;
+            });
+
+            const printContent = `
+                <html lang="zh-TW">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>${printTitle}</title>
+                    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
+                    <style>
+                        body { font-family: "Noto Sans TC", sans-serif; padding: 40px; color: #000; }
+                        h1 { text-align: center; margin-bottom: 10px; }
+                        .meta { text-align: center; margin-bottom: 20px; color: #555; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+                        th, td { border: 1px solid #000; padding: 10px; text-align: left; vertical-align: top; }
+                        th { background-color: #f0f0f0; text-align: center; font-weight: bold; }
+                        .center { text-align: center; }
+                        .right { text-align: right; }
+                        .box { display: inline-block; width: 16px; height: 16px; border: 1.5px solid #000; border-radius: 2px; }
+                        .btn-container { position: fixed; top: 20px; right: 20px; background: #fff; padding: 10px; border: 1px solid #ccc; box-shadow: 0 4px 12px rgba(0,0,0,0.15); border-radius: 8px; display: flex; gap: 10px; }
+                        .btn { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; font-family: "Noto Sans TC", sans-serif; display: flex; align-items: center; gap: 5px; text-decoration: none; font-size: 14px; }
+                        .btn-print { background-color: #2D2D2D; color: #fff; }
+                        .btn-word { background-color: #0056b3; color: #fff; }
+                        .btn:hover { opacity: 0.9; }
+                        @media print { .btn-container { display: none; } body { padding: 0; } }
+                    </style>
+                </head>
+                <body>
+                    <div class="btn-container">
+                        <button onclick="window.print()" class="btn btn-print">🖨️ 列印 / 存為 PDF</button>
+                        <a id="download-word" class="btn btn-word" href="#">📝 下載 Word 檔</a>
+                    </div>
+                    <h1>${printTitle}</h1>
+                    <div class="meta">
+                        📅 日期: ${today} &nbsp;|&nbsp; 
+                        👥 總人數: ${Object.keys(groupedOrders).length} 人 &nbsp;|&nbsp; 
+                        💰 總金額: $${calculateTotal()}
+                    </div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th width="8%">序號</th>
+                                <th width="15%">姓名</th>
+                                <th width="45%">品項明細</th>
+                                <th width="12%">金額</th>
+                                <th width="10%">收款</th>
+                                <th width="10%">領取</th>
+                            </tr>
+                        </thead>
+                        <tbody>${tableRows}</tbody>
+                        <tfoot>
+                             <tr>
+                                <td colspan="3" class="right"><strong>總計</strong></td>
+                                <td class="center"><strong>$${calculateTotal()}</strong></td>
+                                <td colspan="2" style="background:#f9f9f9;"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                    <script>
+                        const htmlContent = document.documentElement.outerHTML;
+                        const blob = new Blob(['\\ufeff', htmlContent], { type: 'application/msword' });
+                        const url = URL.createObjectURL(blob);
+                        const downloadLink = document.getElementById('download-word');
+                        downloadLink.href = url;
+                        downloadLink.download = '${printTitle}_${today}.doc';
+                    <\/script>
+                </body>
+                </html>
+            `;
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
         });
 
         render();
