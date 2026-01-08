@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LOBSTER Word Dive</title>
+    <link rel="icon" href="LOBSTERWordDive.png" type="image/png">
+    <link rel="apple-touch-icon" href="LOBSTERWordDive.png">
+    
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <!-- Babel for JSX -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;700&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- THEME VARIABLES (Warm & Clean) --- */
+        :root {
+            --bg-body: #E8E4DE;
+            --bg-panel: #E8E4DE;
+            --text-main: #433831;
+            --text-muted: #8A7E72;
+            --accent: #D98E56; 
+            --accent-hover: #C27A45;
+            --shadow-light: #ffffff;
+            --shadow-dark: #cbbdae;
+            --highlight-bg: #FFF8F0;
+            --highlight-border: #D98E56;
+            --success: #65A30D;
+        }
+
+        [data-theme='dark'] {
+            --bg-body: #262626;
+            --bg-panel: #262626;
+            --text-main: #e5e5e5;
+            --text-muted: #a3a3a3;
+            --accent: #ff9d5c;
+            --accent-hover: #ffb07c;
+            --shadow-light: #333333;
+            --shadow-dark: #1a1a1a;
+            --highlight-bg: #2d2a26;
+            --highlight-border: #ff9d5c;
+            --success: #84cc16;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            transition: background-color 0.5s ease, color 0.5s ease;
+            min-height: 100vh;
+        }
+
+        /* Neumorphism Classes */
+        .neumorph {
+            box-shadow: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+            background-color: var(--bg-panel);
+            border-radius: 1.5rem;
+        }
+        
+        .neumorph-inset {
+            box-shadow: inset 6px 6px 12px var(--shadow-dark), inset -6px -6px 12px var(--shadow-light);
+            background-color: var(--bg-panel);
+            border-radius: 1rem;
+        }
+
+        .neumorph-btn {
+            box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
+            transition: all 0.2s ease;
+        }
+        
+        .neumorph-btn:active {
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+            transform: translateY(1px);
+        }
+
+        /* Animations */
+        @keyframes float {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(-5px); }
+            100% { transform: translateY(0px); }
+        }
+        .animate-float { animation: float 6s ease-in-out infinite; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in { animation: fadeIn 0.5s ease-out forwards; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--shadow-dark); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        // --- Icons (Lucide Style) ---
+        const Icons = {
+            Search: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
+            Volume2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>,
+            Sparkles: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></svg>,
+            BookOpen: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
+            History: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/><path d="M3 3v9h9"/><path d="M12 7v5l4 2"/></svg>,
+            Moon: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>,
+            Sun: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>,
+            Key: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>,
+            ArrowRight: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>,
+            Anchor: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="5" r="3"/><line x1="12" x2="12" y1="22" y2="8"/><path d="M5 12H2a10 10 0 0 0 20 0h-3"/></svg>,
+            Brain: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
+            Layers: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12.83 2.44 9.8 5.36a2 2 0 0 1 0 3.52l-9.8 5.36a2 2 0 0 1-1.66 0l-9.8-5.36a2 2 0 0 1 0-3.52l9.8-5.36a2 2 0 0 1 1.66 0Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>,
+            MessageSquare: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
+            Trash: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+        };
+
+        const WordDiveApp = () => {
+            const [query, setQuery] = useState('');
+            const [data, setData] = useState(null);
+            const [loading, setLoading] = useState(false);
+            const [history, setHistory] = useState([]);
+            const [error, setError] = useState('');
+            const [apiKey, setApiKey] = useState('');
+            const [showSettings, setShowSettings] = useState(false);
+            const [darkMode, setDarkMode] = useState(false);
+
+            // Init
+            useEffect(() => {
+                const storedKey = localStorage.getItem('gemini_api_key');
+                if (storedKey) setApiKey(storedKey);
+                else setShowSettings(true);
+
+                const storedTheme = localStorage.getItem('theme');
+                if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                    setDarkMode(true);
+                    document.documentElement.setAttribute('data-theme', 'dark');
+                }
+
+                const storedHistory = JSON.parse(localStorage.getItem('word_history') || '[]');
+                setHistory(storedHistory);
+            }, []);
+
+            const toggleTheme = () => {
+                const newMode = !darkMode;
+                setDarkMode(newMode);
+                document.documentElement.setAttribute('data-theme', newMode ? 'dark' : 'light');
+                localStorage.setItem('theme', newMode ? 'dark' : 'light');
+            };
+
+            const saveApiKey = () => {
+                localStorage.setItem('gemini_api_key', apiKey);
+                setShowSettings(false);
+            };
+
+            const clearHistory = () => {
+                if (confirm('Clear all history?')) {
+                    setHistory([]);
+                    localStorage.removeItem('word_history');
+                }
+            };
+
+            const speak = (text) => {
+                window.speechSynthesis.cancel();
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'en-US';
+                window.speechSynthesis.speak(utterance);
+            };
+
+            const handleSearch = async (overrideQuery = null) => {
+                const searchTerm = overrideQuery || query;
+                if (!searchTerm || !apiKey) return;
+                
+                setLoading(true);
+                setError('');
+                setData(null);
+
+                // Construct Prompt
+                const systemPrompt = `
+                    You are "Lobster Word Dive", an advanced vocabulary tutor. 
+                    Target Audience: Traditional Chinese speaker.
+                    
+                    TASK: Analyze the word/phrase: "${searchTerm}".
+                    
+                    IMPORTANT LOGIC: 
+                    1. **Main Focus**: Analyze the EXACT form provided (e.g., if input is "navigating", Main Word is "Navigating").
+                    2. **Root**: Identify the root word (e.g., "Navigate").
+                    3. **Syllables**: Break words into syllables. **CRITICAL: Wrap the STRESSED syllable in <b> tags.** (e.g., rec-<b>og</b>-niz-ing).
+                    
+                    RETURN JSON ONLY. Structure:
+                    {
+                        "mainWord": "The input word properly capitalized (e.g., Navigating)",
+                        "mainIPA": "IPA for the input word",
+                        "mainSyllables": "Syllables for input word with <b>stress</b>",
+                        "pos": "Specific Part of speech (e.g., v. (present participle))",
+                        
+                        "root": {
+                            "word": "The Root Word (e.g., Navigate)",
+                            "ipa": "IPA for root",
+                            "syllables": "Syllables for root with <b>stress</b>",
+                            "def": "Simple English definition of the root"
+                        },
+                        
+                        "family": [
+                            {"form": "past", "word": "navigated"},
+                            {"form": "participle", "word": "navigating"},
+                            {"form": "3rd person", "word": "navigates"}
+                        ],
+
+                        "chineseDef": "Traditional Chinese Definition (for the main input word)",
+                        "instantUnd": "Traditional Chinese. The 'Seconds to Understand' section. Use a vivid metaphor, analogy, or mental image. Make it relatable.",
+                        "etymology": "Brief, interesting origin story (1 sentence) in Traditional Chinese.",
+                        "nuance": {
+                            "title": "Nuance / Synonyms",
+                            "content": "Compare with 1-2 synonyms or explain confusion. In Traditional Chinese."
+                        },
+                        "collocations": [
+                            {"en": "English Phrase 1", "ch": "Short Chinese Translation", "sent": "Short example sentence showing usage."},
+                            {"en": "English Phrase 2", "ch": "Short Chinese Translation", "sent": "Short example sentence showing usage."},
+                            {"en": "English Phrase 3", "ch": "Short Chinese Translation", "sent": "Short example sentence showing usage."}
+                        ],
+                        "phrases": [
+                            {"en": "Phrase 1", "ch": "Translation", "use": "Brief usage note or context", "sent": "Short example sentence showing usage."},
+                            {"en": "Phrase 2", "ch": "Translation", "use": "Brief usage note or context", "sent": "Short example sentence showing usage."},
+                            {"en": "Phrase 3", "ch": "Translation", "use": "Brief usage note or context", "sent": "Short example sentence showing usage."},
+                            {"en": "Phrase 4", "ch": "Translation", "use": "Brief usage note or context", "sent": "Short example sentence showing usage."}
+                        ],
+                        "sentences": [
+                            {"ctx": "Daily Life", "en": "Sentence using the INPUT form if possible.", "ch": "Chinese translation."},
+                            {"ctx": "Business/Formal", "en": "Sentence using the INPUT form if possible.", "ch": "Chinese translation."},
+                            {"ctx": "Creative/Literary", "en": "Sentence using the INPUT form if possible.", "ch": "Chinese translation."}
+                        ]
+                    }
+                    
+                    INSTRUCTION FOR 'PHRASES': List common phrases, idioms, phrasal verbs, or fixed expressions containing the word. Provide as many useful/common ones as appropriate (aim for 4-6 if possible, no strict limit).
+                `;
+
+                try {
+                    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${apiKey}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: `Analyze "${searchTerm}"` }] }],
+                            systemInstruction: { parts: [{ text: systemPrompt }] },
+                            generationConfig: { responseMimeType: "application/json" }
+                        })
+                    });
+
+                    if (!response.ok) throw new Error("API Error");
+                    
+                    const result = await response.json();
+                    const text = result.candidates[0].content.parts[0].text;
+                    const json = JSON.parse(text);
+                    
+                    setData(json);
+                    
+                    // Update History (Use mainWord)
+                    const newHistory = [json.mainWord, ...history.filter(w => w !== json.mainWord)].slice(0, 8);
+                    setHistory(newHistory);
+                    localStorage.setItem('word_history', JSON.stringify(newHistory));
+
+                } catch (err) {
+                    console.error(err);
+                    setError("Search failed. Check API key or connection.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const renderSyllables = (htmlStr) => {
+                // Safe render for <b> tags in syllables
+                return <span dangerouslySetInnerHTML={{ __html: htmlStr }} />;
+            };
+
+            return (
+                <div className="min-h-screen pb-12 transition-colors duration-300">
+                    
+                    {/* Header */}
+                    <header className="pt-6 pb-2 px-6 flex justify-between items-center max-w-3xl mx-auto">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-[var(--bg-panel)] shadow-[5px_5px_10px_var(--shadow-dark),-5px_-5px_10px_var(--shadow-light)] text-[var(--accent)]">
+                                <Icons.Anchor className="w-6 h-6" />
+                            </div>
+                            <span className="font-bold text-xl tracking-tight opacity-80">LOBSTER <span className="text-[var(--accent)]">Word Dive</span></span>
+                        </div>
+                        <div className="flex gap-4">
+                            <button onClick={toggleTheme} className="p-2 rounded-full neumorph-btn text-[var(--text-muted)] hover:text-[var(--accent)]">
+                                {darkMode ? <Icons.Sun className="w-5 h-5" /> : <Icons.Moon className="w-5 h-5" />}
+                            </button>
+                            <button onClick={() => setShowSettings(!showSettings)} className="p-2 rounded-full neumorph-btn text-[var(--text-muted)] hover:text-[var(--accent)]">
+                                <Icons.Key className="w-5 h-5" />
+                            </button>
+                        </div>
+                    </header>
+
+                    {/* Settings Modal (Inline) */}
+                    {showSettings && (
+                        <div className="max-w-3xl mx-auto px-6 mb-6 animate-fade-in">
+                            <div className="p-6 rounded-2xl neumorph-inset flex gap-3 items-center">
+                                <Icons.Key className="w-5 h-5 text-[var(--accent)] flex-shrink-0" />
+                                <input 
+                                    type="password" 
+                                    value={apiKey} 
+                                    onChange={(e) => setApiKey(e.target.value)} 
+                                    placeholder="Enter your Gemini API Key here..."
+                                    className="flex-grow bg-transparent outline-none text-[var(--text-main)] placeholder-opacity-50"
+                                />
+                                <button onClick={saveApiKey} className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white font-bold shadow-md hover:opacity-90">Save</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Search Section */}
+                    <div className="max-w-3xl mx-auto px-6 mt-8">
+                        <div className="relative group">
+                            <input 
+                                type="text" 
+                                value={query}
+                                onChange={(e) => setQuery(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                placeholder="Type a word (e.g., recognizing)..."
+                                className="w-full py-5 pl-14 pr-6 rounded-3xl neumorph text-xl font-medium outline-none text-[var(--text-main)] placeholder-[var(--text-muted)] transition-shadow focus:shadow-[inset_4px_4px_8px_var(--shadow-dark),inset_-4px_-4px_8px_var(--shadow-light)]"
+                            />
+                            <Icons.Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-[var(--accent)] opacity-70 group-focus-within:opacity-100 transition-opacity" />
+                            
+                            <button 
+                                onClick={() => handleSearch()}
+                                disabled={loading}
+                                className="absolute right-3 top-3 bottom-3 aspect-square rounded-2xl bg-[var(--accent)] text-white flex items-center justify-center shadow-lg hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                            >
+                                {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Icons.ArrowRight className="w-6 h-6" />}
+                            </button>
+                        </div>
+
+                        {/* History Chips */}
+                        {history.length > 0 && (
+                            <div className="flex flex-wrap gap-3 mt-6 pl-2 items-center">
+                                <div className="flex items-center gap-2 mr-2">
+                                    <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-60"><Icons.History className="w-3 h-3" /> Recent</span>
+                                    <button onClick={clearHistory} className="p-1 rounded-full hover:bg-[var(--text-muted)]/10 text-[var(--text-muted)] transition-colors" title="Clear History">
+                                        <Icons.Trash className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                {history.map((w, i) => (
+                                    <button 
+                                        key={i} 
+                                        onClick={() => { setQuery(w); handleSearch(w); }}
+                                        className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--bg-panel)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:translate-y-[-1px] active:shadow-[inset_2px_2px_4px_var(--shadow-dark),inset_-2px_-2px_4px_var(--shadow-light)] transition-all"
+                                    >
+                                        {w}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Content Area */}
+                    <main className="max-w-3xl mx-auto px-6 mt-10">
+                        {error && <div className="p-4 rounded-xl bg-red-100 text-red-600 text-center font-medium">{error}</div>}
+
+                        {!data && !loading && (
+                            <div className="text-center py-20 opacity-30 select-none">
+                                <div className="inline-block p-6 rounded-full neumorph mb-4">
+                                    <Icons.BookOpen className="w-12 h-12 text-[var(--accent)]" />
+                                </div>
+                                <h2 className="text-2xl font-bold">Word Dive</h2>
+                                <p>Deep understanding for serious learners.</p>
+                            </div>
+                        )}
+
+                        {data && (
+                            <div className="animate-fade-in space-y-8">
+                                
+                                {/* 1. Head Card: Word, Pronunciation, Basic Def */}
+                                <section className="neumorph p-8 relative overflow-hidden">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)] blur-[80px] opacity-20 pointer-events-none"></div>
+                                    
+                                    {/* MAIN WORD (Input Form) */}
+                                    <div className="flex flex-col md:flex-row md:items-baseline gap-4 mb-2">
+                                        <h1 className="text-5xl font-bold tracking-tight text-[var(--text-main)]">{data.mainWord}</h1>
+                                        <div className="flex items-center gap-3">
+                                            <button onClick={() => speak(data.mainWord)} className="p-2 rounded-full neumorph-btn text-[var(--accent)] hover:scale-110 active:scale-95 transition-transform"><Icons.Volume2 className="w-5 h-5" /></button>
+                                            <span className="font-mono text-[var(--text-muted)] text-lg">/{data.mainIPA}/</span>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="flex flex-wrap items-center gap-4 mb-6">
+                                        <span className="px-3 py-1 rounded-lg bg-[var(--bg-body)] border border-[var(--shadow-dark)] text-sm font-bold italic text-[var(--text-muted)]">{data.pos}</span>
+                                        <span className="text-xl font-medium tracking-wide text-[var(--text-main)]">{renderSyllables(data.mainSyllables)}</span>
+                                    </div>
+
+                                    {/* ROOT WORD SECTION (If different or explicit) */}
+                                    {data.root && data.root.word.toLowerCase() !== data.mainWord.toLowerCase() && (
+                                        <div className="mb-6 p-4 rounded-xl bg-[var(--bg-body)]/50 border border-[var(--shadow-dark)]/50">
+                                            <div className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] mb-2 flex items-center gap-2">
+                                                <Icons.Layers className="w-3 h-3" /> Root Word (原型)
+                                            </div>
+                                            <div className="flex flex-wrap items-center gap-4">
+                                                <span className="text-xl font-bold text-[var(--text-main)]">{data.root.word}</span>
+                                                <button onClick={() => speak(data.root.word)} className="p-1.5 rounded-full bg-[var(--bg-panel)] shadow-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"><Icons.Volume2 className="w-4 h-4" /></button>
+                                                <span className="font-mono text-sm text-[var(--text-muted)]">/{data.root.ipa}/</span>
+                                                <span className="text-sm font-medium opacity-80">{renderSyllables(data.root.syllables)}</span>
+                                            </div>
+                                            <div className="text-sm text-[var(--text-muted)] mt-1 italic">{data.root.def}</div>
+                                        </div>
+                                    )}
+
+                                    {/* FAMILY / FORMS */}
+                                    {data.family && (
+                                        <div className="mb-6 flex flex-wrap gap-2">
+                                            {data.family.map((f, i) => (
+                                                <span key={i} className="px-2 py-1 rounded text-xs font-medium bg-[var(--bg-body)] text-[var(--text-muted)] border border-transparent hover:border-[var(--accent)] transition-colors cursor-default" title={f.form}>
+                                                    {f.word}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    <div className="pl-4 border-l-4 border-[var(--accent)]">
+                                        <p className="text-2xl font-medium mb-1">{data.chineseDef}</p>
+                                    </div>
+                                </section>
+
+                                {/* 2. The "Instant Understanding" Engine */}
+                                <section className="neumorph p-1 bg-[var(--highlight-bg)] border border-[var(--highlight-border)] shadow-[0_10px_30px_-10px_rgba(217,142,86,0.3)]">
+                                    <div className="p-7 h-full rounded-[1.2rem] bg-[var(--highlight-bg)]">
+                                        <div className="flex items-center gap-2 mb-4 text-[var(--accent)]">
+                                            <Icons.Sparkles className="w-5 h-5 animate-pulse" />
+                                            <h3 className="font-bold uppercase tracking-wider text-sm">Instant Understanding (中文秒懂)</h3>
+                                        </div>
+                                        <p className="text-lg md:text-xl leading-relaxed font-medium text-[var(--text-main)]">
+                                            {data.instantUnd}
+                                        </p>
+                                        {data.etymology && (
+                                            <div className="mt-4 pt-4 border-t border-[var(--accent)]/20 text-sm text-[var(--text-muted)] flex gap-2">
+                                                <Icons.History className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                                <span>{data.etymology}</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </section>
+
+                                {/* 3. Nuance & Confusion + Collocations + Phrases (Stacked) */}
+                                <div className="grid grid-cols-1 gap-6">
+                                    <section className="neumorph p-6">
+                                        <div className="flex items-center gap-2 mb-4 text-[var(--text-muted)]">
+                                            <Icons.Brain className="w-5 h-5" />
+                                            <h3 className="font-bold uppercase tracking-wider text-sm">{data.nuance.title}</h3>
+                                        </div>
+                                        <p className="text-[var(--text-main)] leading-relaxed">
+                                            {data.nuance.content}
+                                        </p>
+                                    </section>
+
+                                    <section className="neumorph p-6">
+                                        <div className="flex items-center gap-2 mb-4 text-[var(--text-muted)]">
+                                            <Icons.Anchor className="w-5 h-5" />
+                                            <h3 className="font-bold uppercase tracking-wider text-sm">Common Collocations</h3>
+                                        </div>
+                                        <div className="flex flex-col gap-3">
+                                            {data.collocations.map((col, i) => (
+                                                <div key={i} className="flex flex-col gap-1 p-3 rounded-lg hover:bg-[var(--bg-body)] transition-colors border border-transparent hover:border-[var(--shadow-dark)]" onClick={() => col.sent && speak(col.sent)}>
+                                                    <div className="flex flex-wrap items-baseline gap-x-3 cursor-pointer">
+                                                        <span className="font-medium text-[var(--text-main)] text-lg hover:text-[var(--accent)]">{col.en}</span>
+                                                        <span className="text-sm text-[var(--accent)] font-medium">{col.ch}</span>
+                                                    </div>
+                                                    {col.sent && (
+                                                        <div className="text-sm text-[var(--text-muted)] italic pl-1 border-l-2 border-[var(--accent)]/30">
+                                                            {col.sent} <Icons.Volume2 className="inline w-3 h-3 opacity-30 ml-1" />
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </section>
+                                    
+                                    {/* NEW: Phrases & Usages Section */}
+                                    {data.phrases && data.phrases.length > 0 && (
+                                        <section className="neumorph p-6">
+                                            <div className="flex items-center gap-2 mb-4 text-[var(--text-muted)]">
+                                                <Icons.MessageSquare className="w-5 h-5" />
+                                                <h3 className="font-bold uppercase tracking-wider text-sm">Common Phrases & Usages</h3>
+                                            </div>
+                                            <div className="space-y-4">
+                                                {data.phrases.map((item, i) => (
+                                                    <div key={i} className="p-4 rounded-xl bg-[var(--bg-body)] border border-transparent hover:border-[var(--accent)] transition-all cursor-pointer" onClick={() => item.sent && speak(item.sent)}>
+                                                        <div className="flex flex-wrap items-baseline gap-2 mb-1">
+                                                            <span className="font-bold text-[var(--text-main)] text-lg hover:text-[var(--accent)]">{item.en}</span>
+                                                        </div>
+                                                        <div className="flex flex-col sm:flex-row gap-2 sm:items-center text-sm mb-2">
+                                                            <span className="font-medium text-[var(--accent)]">{item.ch}</span>
+                                                            {item.use && (
+                                                                <>
+                                                                    <span className="hidden sm:inline text-[var(--text-muted)]">•</span>
+                                                                    <span className="text-[var(--text-muted)] italic">{item.use}</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                        {item.sent && (
+                                                            <div className="text-sm text-[var(--text-muted)] italic pl-2 border-l-2 border-[var(--accent)]/30 mt-1">
+                                                                {item.sent} <Icons.Volume2 className="inline w-3 h-3 opacity-30 ml-1" />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </section>
+                                    )}
+                                </div>
+
+                                {/* 4. Contextual Examples */}
+                                <section className="neumorph p-8">
+                                    <h3 className="font-bold uppercase tracking-wider text-sm text-[var(--text-muted)] mb-6">Contextual Examples</h3>
+                                    <div className="space-y-6">
+                                        {data.sentences.map((sent, idx) => (
+                                            <div key={idx} className="group cursor-pointer" onClick={() => speak(sent.en)}>
+                                                <div className="flex justify-between items-center mb-1">
+                                                    <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-[var(--bg-body)] text-[var(--accent)]">{sent.ctx}</span>
+                                                    <Icons.Volume2 className="w-4 h-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                </div>
+                                                <p className="text-lg text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-200 font-medium">
+                                                    {sent.en}
+                                                </p>
+                                                <p className="text-sm text-[var(--text-muted)] mt-1">
+                                                    {sent.ch}
+                                                </p>
+                                                {idx !== data.sentences.length - 1 && <div className="h-px w-full bg-[var(--text-muted)] opacity-10 mt-4"></div>}
+                                            </div>
+                                        ))}
+                                    </div>
+                                </section>
+
+                                <div className="text-center pt-8 pb-4 opacity-50 text-xs tracking-widest">
+                                    LOBSTER WORD DIVE ENGINE
+                                </div>
+                            </div>
+                        )}
+                    </main>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<WordDiveApp />);
+    </script>
+</body>
+</html>
