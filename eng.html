@@ -206,7 +206,7 @@
                 });
                 if (material.grammar) {
                     md += `## 3. Grammar Focus\n\n`;
-                    material.grammar.forEach(g => md += `### ${g.point}\n${g.explanation.replace(/<b>(.*?)<\/b>/g, '**$1**')}\n\n> *${g.example.replace(/<b>(.*?)<\/b>/g, '**$1**')}*\n\n`);
+                    material.grammar.forEach(g => md += `### ${g.point}\n**核心概念:** ${g.core_concept}\n${g.explanation.replace(/<b>(.*?)<\/b>/g, '**$1**')}\n\n> *${g.example.replace(/<b>(.*?)<\/b>/g, '**$1**')}*\n> (${g.example_ch})\n\n`);
                 }
                 navigator.clipboard.writeText(md).then(() => alert('Markdown copied!'));
             };
@@ -221,7 +221,7 @@
                 });
                 if (material.grammar) {
                     content += `<h2>3. Grammar Focus</h2>`;
-                    material.grammar.forEach(g => content += `<div class="highlight"><h3>${g.point}</h3><p>${g.explanation.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}</p><p style="font-style: italic; color: #556943;">"${g.example.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}"</p></div>`);
+                    material.grammar.forEach(g => content += `<div class="highlight"><h3>${g.point}</h3><p><b>Core Concept:</b> ${g.core_concept}</p><p>${g.explanation.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}</p><p style="font-style: italic; color: #556943;">"${g.example.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}"</p><p style="font-size: 10pt; color: #666;">(${g.example_ch})</p></div>`);
                 }
                 const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(header + content + '</body></html>');
                 const fileDownload = document.createElement("a");
@@ -375,15 +375,18 @@
                 ];
                 const randomAngle = angles[Math.floor(Math.random() * angles.length)];
 
-                // --- VOCABULARY STRATEGY (New Feature) ---
+                // --- VOCABULARY STRATEGY (New Feature: MIXED) ---
                 const vocabStrategies = [
-                    "Action-oriented: Focus on selecting strong, precise VERBS as keywords (e.g., 'scrutinize' instead of 'look').",
-                    "Descriptive: Focus on selecting vivid ADJECTIVES and sensory words as keywords.",
-                    "Conceptual: Focus on ABSTRACT NOUNS and concepts as keywords.",
-                    "Idiomatic: Focus on PHRASAL VERBS and natural collocations as keywords.",
-                    "Connector-focused: Focus on sophisticated TRANSITION WORDS and logical connectors as keywords (if appropriate for level)."
+                    "Action-oriented (Strong Verbs)",
+                    "Descriptive (Vivid Adjectives)",
+                    "Conceptual (Abstract Nouns)",
+                    "Idiomatic (Phrasal Verbs & Collocations)",
+                    "Connector-focused (Sophisticated Transitions)"
                 ];
-                const randomVocabStrategy = vocabStrategies[Math.floor(Math.random() * vocabStrategies.length)];
+                // Shuffle and pick 2 strategies to mix
+                const shuffledStrategies = [...vocabStrategies].sort(() => 0.5 - Math.random());
+                const selectedStrategies = shuffledStrategies.slice(0, 2);
+                const mixedVocabStrategy = `Mix of: 1. ${selectedStrategies[0]} AND 2. ${selectedStrategies[1]}. Avoid generic words.`;
                 
                 // --- PROMPT ENGINEERING BASED ON STYLE ---
                 let styleInstruction = "";
@@ -408,8 +411,8 @@
                     **CRITICAL: VARIETY & ANGLE**
                     To avoid generic content, please write this specific article focusing on the **${randomAngle}** of the topic.
                     
-                    **CRITICAL: VOCABULARY SELECTION STRATEGY**
-                    **Strategy:** ${randomVocabStrategy}
+                    **CRITICAL: VOCABULARY SELECTION STRATEGY (MIXED)**
+                    **Strategy:** ${mixedVocabStrategy}
                     **Instruction:** actively try to avoid the top 10 most obvious/common words associated with this topic if possible. Choose synonyms that fit the level but offer variety.
                     
                     **STYLE & TONE:** ${styleInstruction}
@@ -428,6 +431,13 @@
                         - **GOOD EXAMPLES:**
                           - Topic: "Coffee" -> Title: "The Art of the Morning Brew" (NOT "About Coffee")
                     
+                    **CRITICAL: GRAMMAR FOCUS**
+                    - **Target:** Advanced learners / Native-like nuance.
+                    - **FORBIDDEN:** Do NOT list basic grammar rules (e.g., simple tenses, singular/plural, subject-verb agreement) unless used for a specific rhetorical effect.
+                    - **FOCUS ON:** Sentence variety, rhetorical devices (inversion, parallelism, emphasis), cohesive devices, tone shifting, advanced clause structures, or subtle modality.
+                    - **EXPLANATION LANGUAGE:** The explanation MUST be in **Traditional Chinese (繁體中文)**. It should explain the *feeling*, *nuance*, or *function* of the grammar, not just the formula. Use analogies if possible.
+                    - **EXAMPLE FORMAT:** The \`example\` field MUST contain the English sentence. **CRITICAL:** You MUST wrap the specific words illustrating the grammar rule in \`<b>\` tags (e.g., "Never <b>have I seen</b> such beauty").
+
                     **FORMAT:**
                     - Bold 15-20 key words in the article using \`<b>\`. **CRITICAL: EVERY BOLD WORD MUST BE IN THE VOCABULARY LIST.**
                     - **Instant Understanding (中文秒懂):** **CRITICAL: MUST BE IN TRADITIONAL CHINESE (繁體中文).** Explain definitions using metaphors/analogies for a junior high student. Do NOT use English here.
@@ -443,12 +453,18 @@
                             { "word": "Word", "pos": "n./v.", "chinese": "Def", "ipa": "IPA", "phonics": "pho-<b>nics</b>", "englishDef": "Def", "instantUnd": "Metaphor (in Traditional Chinese)", "collocations": "Usage", "sentences": [{ "en": "Ex 1", "ch": "Trans 1" }, { "en": "Ex 2", "ch": "Trans 2" }, { "en": "Ex 3", "ch": "Trans 3" }] }
                         ],
                         "grammar": [
-                            { "point": "Point", "explanation": "Exp", "example": "Ex" }
+                            { 
+                                "point": "Grammar Point Name (e.g., Inversion for Emphasis)", 
+                                "core_concept": "Metaphor/Analogy (in Traditional Chinese, e.g. '把重要的東西往前丟')",
+                                "explanation": "Detailed explanation in Traditional Chinese focusing on nuance and effect.", 
+                                "example": "Example sentence with <b>bold grammar structure</b>",
+                                "example_ch": "Traditional Chinese translation of the example sentence"
+                            }
                         ]
                     }
                 `;
         
-                const fetchWithRetry = async (retries = 3, delay = 2000) => {
+                const fetchWithRetry = async (retries = 5, delay = 2000) => {
                     try {
                         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, {
                             method: 'POST',
@@ -471,7 +487,12 @@
 
                         if (!response.ok) {
                             const errData = await response.json().catch(() => ({}));
-                            throw new Error(errData.error?.message || `API Error: ${response.status}`);
+                            const errorMsg = errData.error?.message || `API Error: ${response.status}`;
+                            // Specific check for quota or rate limit errors
+                            if (errorMsg.includes('quota') || response.status === 429) {
+                                throw new Error("API 使用量已達上限 (Quota Exceeded)，請稍待片刻再試。");
+                            }
+                            throw new Error(errorMsg);
                         }
                         
                         return await response.json();
@@ -507,7 +528,7 @@
                     setMaterial(JSON.parse(textResponse));
                 } catch (err) {
                     console.error(err);
-                    setError("生成失敗，請稍後再試。");
+                    setError(err.message || "生成失敗，請稍後再試。");
                 } finally {
                     setLoading(false);
                 }
@@ -616,11 +637,41 @@
                                     {material.grammar && (
                                         <section className="break-before-auto mt-12">
                                             <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 font-sans border-t border-gray-200 pt-8" style={{ color: 'var(--text-main)' }}><span className="text-[#65A30D] text-3xl print:text-black">03.</span> Grammar Focus</h2>
-                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 print:grid-cols-1">{material.grammar.map((item, idx) => (
-                                                <div key={idx} className="p-6 rounded-2xl border break-inside-avoid bg-highlight" style={{ backgroundColor: 'var(--highlight-bg)', borderColor: 'var(--bg-panel)' }}>
-                                                    <div className="flex items-center gap-2 mb-3"><Icons.Feather className="w-5 h-5 text-[#65A30D] text-accent" /><h3 className="font-bold text-lg text-[#365314] text-accent">{item.point}</h3></div>
-                                                    <p className="mb-4 text-sm leading-relaxed min-h-[3em]" style={{ color: 'var(--text-main)' }}>{renderFormattedText(item.explanation)}</p>
-                                                    <div className="p-3 rounded-lg border text-sm font-serif italic print:border-gray-200" style={{ backgroundColor: 'var(--bg-paper)', borderColor: 'var(--bg-panel)', color: 'var(--text-muted)' }}>"{renderFormattedText(item.example)}"</div>
+                                            <div className="space-y-10">{material.grammar.map((item, idx) => (
+                                                <div key={idx} className="break-inside-avoid relative pl-4 border-l-2 hover:border-[var(--accent)] transition-colors duration-300" style={{ borderColor: 'var(--bg-panel)' }}>
+                                                    <div className="flex flex-wrap items-baseline gap-x-4 mb-3">
+                                                        <span className="text-sm font-bold opacity-50 font-sans">#{idx + 1}</span>
+                                                        <h3 className="text-2xl font-bold font-sans tracking-tight" style={{ color: 'var(--text-main)' }}>{item.point}</h3>
+                                                        {item.core_concept && (
+                                                            <span className="ml-3 inline-block px-3 py-1 rounded-full text-xs font-bold bg-[#65A30D] text-white print:text-black print:border print:border-black print:bg-transparent align-middle">
+                                                                ★ {item.core_concept}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="p-4 rounded-xl border-l-4 bg-highlight mb-4" style={{ backgroundColor: 'var(--highlight-bg)', borderColor: 'var(--highlight-border)' }}>
+                                                        <p className="leading-relaxed text-sm md:text-base font-medium" style={{ color: 'var(--text-main)' }}>
+                                                            {renderFormattedText(item.explanation)}
+                                                        </p>
+                                                    </div>
+
+                                                    <div className="pl-1 mt-4">
+                                                        <div className="text-xs font-bold uppercase tracking-wider opacity-60 mb-2">Example</div>
+                                                        <div className="p-4 rounded-xl border flex flex-col gap-2" style={{ backgroundColor: 'var(--bg-paper)', borderColor: 'var(--bg-panel)' }}>
+                                                            <div className="flex gap-2 items-start">
+                                                                <span className="text-[var(--accent)] font-bold text-2xl leading-none mt-1">“</span>
+                                                                <div className="flex-1">
+                                                                    <div className="text-lg md:text-xl font-serif leading-relaxed mb-2" style={{ color: 'var(--text-main)' }}>
+                                                                        {renderFormattedText(item.example)}
+                                                                    </div>
+                                                                    <div className="text-sm font-sans opacity-70" style={{ color: 'var(--text-muted)' }}>
+                                                                        {item.example_ch}
+                                                                    </div>
+                                                                </div>
+                                                                <span className="text-[var(--accent)] font-bold text-2xl leading-none self-end">”</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             ))}</div>
                                         </section>
