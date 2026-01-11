@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOBSTER Word Dive</title>
+    <title>LOBSTER Word Dive v3 (Cached)</title>
     <link rel="icon" href="LOBSTERWordDive.png" type="image/png">
     <link rel="apple-touch-icon" href="LOBSTERWordDive.png">
     
@@ -34,6 +34,8 @@
             --highlight-bg: #FFF8F0;
             --highlight-border: #D98E56;
             --success: #65A30D;
+            --star-active: #F59E0B;
+            --cached-badge: #10B981;
         }
 
         [data-theme='dark'] {
@@ -48,6 +50,8 @@
             --highlight-bg: #2d2a26;
             --highlight-border: #ff9d5c;
             --success: #84cc16;
+            --star-active: #fbbf24;
+            --cached-badge: #34D399;
         }
 
         body {
@@ -74,11 +78,19 @@
         .neumorph-btn {
             box-shadow: 5px 5px 10px var(--shadow-dark), -5px -5px 10px var(--shadow-light);
             transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .neumorph-btn:active {
             box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
             transform: translateY(1px);
+        }
+        
+        .neumorph-btn.active-state {
+            box-shadow: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+            color: var(--accent);
         }
 
         /* Animations */
@@ -112,6 +124,7 @@
         const Icons = {
             Search: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>,
             Volume2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>,
+            Volume1: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>, // Slow icon
             Sparkles: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L12 3Z"/><path d="M5 3v4"/><path d="M9 3v4"/><path d="M3 5h4"/><path d="M3 9h4"/></svg>,
             BookOpen: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>,
             History: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/><path d="M3 3v9h9"/><path d="M12 7v5l4 2"/></svg>,
@@ -123,7 +136,10 @@
             Brain: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z"/><path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z"/></svg>,
             Layers: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12.83 2.44 9.8 5.36a2 2 0 0 1 0 3.52l-9.8 5.36a2 2 0 0 1-1.66 0l-9.8-5.36a2 2 0 0 1 0-3.52l9.8-5.36a2 2 0 0 1 1.66 0Z"/><path d="m22 17.65-9.17 4.16a2 2 0 0 1-1.66 0L2 17.65"/><path d="m22 12.65-9.17 4.16a2 2 0 0 1-1.66 0L2 12.65"/></svg>,
             MessageSquare: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>,
-            Trash: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>
+            Trash: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
+            Star: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={props.fill || "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
+            Lightning: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
+            Database: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
         };
 
         const WordDiveApp = () => {
@@ -131,10 +147,13 @@
             const [data, setData] = useState(null);
             const [loading, setLoading] = useState(false);
             const [history, setHistory] = useState([]);
+            const [favorites, setFavorites] = useState([]);
+            const [cache, setCache] = useState({}); // NEW: Cache State
             const [error, setError] = useState('');
             const [apiKey, setApiKey] = useState('');
             const [showSettings, setShowSettings] = useState(false);
             const [darkMode, setDarkMode] = useState(false);
+            const [view, setView] = useState('home'); 
 
             // Init
             useEffect(() => {
@@ -150,6 +169,13 @@
 
                 const storedHistory = JSON.parse(localStorage.getItem('word_history') || '[]');
                 setHistory(storedHistory);
+
+                const storedFavorites = JSON.parse(localStorage.getItem('word_favorites') || '[]');
+                setFavorites(storedFavorites);
+
+                // Load Cache
+                const storedCache = JSON.parse(localStorage.getItem('word_cache') || '{}');
+                setCache(storedCache);
             }, []);
 
             const toggleTheme = () => {
@@ -171,22 +197,67 @@
                 }
             };
 
-            const speak = (text) => {
+            const clearCache = () => {
+                if (confirm('Clear offline data cache?')) {
+                    setCache({});
+                    localStorage.removeItem('word_cache');
+                    alert('Cache cleared.');
+                }
+            };
+
+            const toggleFavorite = (word) => {
+                if (!word) return;
+                const isFav = favorites.includes(word);
+                let newFavs;
+                if (isFav) {
+                    newFavs = favorites.filter(w => w !== word);
+                } else {
+                    newFavs = [word, ...favorites];
+                }
+                setFavorites(newFavs);
+                localStorage.setItem('word_favorites', JSON.stringify(newFavs));
+            };
+
+            const speak = (text, rate = 1) => {
                 window.speechSynthesis.cancel();
                 const utterance = new SpeechSynthesisUtterance(text);
                 utterance.lang = 'en-US';
+                utterance.rate = rate; // Speed control
                 window.speechSynthesis.speak(utterance);
             };
 
             const handleSearch = async (overrideQuery = null) => {
                 const searchTerm = overrideQuery || query;
-                if (!searchTerm || !apiKey) return;
+                if (!searchTerm) return;
                 
+                if (overrideQuery) setQuery(overrideQuery);
+
+                const cacheKey = searchTerm.trim().toLowerCase();
+                setView('home'); // Force view to home on search
+
+                // 1. Check Cache
+                if (cache[cacheKey]) {
+                    console.log("Loading from cache:", cacheKey);
+                    setData({ ...cache[cacheKey], fromCache: true }); // Add flag for UI
+                    
+                    // Update History order (bring to front)
+                    const existingMainWord = cache[cacheKey].mainWord;
+                    const newHistory = [existingMainWord, ...history.filter(w => w !== existingMainWord)].slice(0, 10);
+                    setHistory(newHistory);
+                    localStorage.setItem('word_history', JSON.stringify(newHistory));
+                    return;
+                }
+
+                // 2. If not in cache, fetch from API
+                if (!apiKey) {
+                    setShowSettings(true);
+                    return;
+                }
+
                 setLoading(true);
                 setError('');
                 setData(null);
 
-                // Construct Prompt
                 const systemPrompt = `
                     You are "Lobster Word Dive", an advanced vocabulary tutor. 
                     Target Audience: Traditional Chinese speaker.
@@ -219,11 +290,11 @@
                         ],
 
                         "chineseDef": "Traditional Chinese Definition (for the main input word)",
-                        "instantUnd": "Traditional Chinese. The 'Seconds to Understand' section. Use a vivid metaphor, analogy, or mental image. Make it relatable.",
+                        "instantUnd": "Traditional Chinese. The 'Seconds to Understand' section. Use a vivid metaphor, analogy, or mental image. Make it relatable. Think like a tutor explaining to a middle school student.",
                         "etymology": "Brief, interesting origin story (1 sentence) in Traditional Chinese.",
                         "nuance": {
                             "title": "Nuance / Synonyms",
-                            "content": "Compare with 1-2 synonyms or explain confusion. In Traditional Chinese."
+                            "content": "Compare with 1-2 synonyms or explain confusion. In Traditional Chinese. Bold the synonym words."
                         },
                         "collocations": [
                             {"en": "English Phrase 1", "ch": "Short Chinese Translation", "sent": "Short example sentence showing usage."},
@@ -242,8 +313,6 @@
                             {"ctx": "Creative/Literary", "en": "Sentence using the INPUT form if possible.", "ch": "Chinese translation."}
                         ]
                     }
-                    
-                    INSTRUCTION FOR 'PHRASES': List common phrases, idioms, phrasal verbs, or fixed expressions containing the word. Provide as many useful/common ones as appropriate (aim for 4-6 if possible, no strict limit).
                 `;
 
                 try {
@@ -263,12 +332,22 @@
                     const text = result.candidates[0].content.parts[0].text;
                     const json = JSON.parse(text);
                     
-                    setData(json);
+                    setData({ ...json, fromCache: false });
                     
-                    // Update History (Use mainWord)
-                    const newHistory = [json.mainWord, ...history.filter(w => w !== json.mainWord)].slice(0, 8);
+                    // Update History
+                    const newHistory = [json.mainWord, ...history.filter(w => w !== json.mainWord)].slice(0, 10);
                     setHistory(newHistory);
                     localStorage.setItem('word_history', JSON.stringify(newHistory));
+
+                    // Update Cache (Key = Lowercase MainWord for consistency)
+                    // We also map the search term itself to this result to ensure hitting 'back' or retyping works
+                    const newCache = { 
+                        ...cache, 
+                        [json.mainWord.toLowerCase()]: json,
+                        [searchTerm.trim().toLowerCase()]: json 
+                    };
+                    setCache(newCache);
+                    localStorage.setItem('word_cache', JSON.stringify(newCache));
 
                 } catch (err) {
                     console.error(err);
@@ -279,7 +358,6 @@
             };
 
             const renderSyllables = (htmlStr) => {
-                // Safe render for <b> tags in syllables
                 return <span dangerouslySetInnerHTML={{ __html: htmlStr }} />;
             };
 
@@ -288,7 +366,7 @@
                     
                     {/* Header */}
                     <header className="pt-6 pb-2 px-6 flex justify-between items-center max-w-3xl mx-auto">
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setData(null); setView('home'); }}>
                             <div className="p-2.5 rounded-xl bg-[var(--bg-panel)] shadow-[5px_5px_10px_var(--shadow-dark),-5px_-5px_10px_var(--shadow-light)] text-[var(--accent)]">
                                 <Icons.Anchor className="w-6 h-6" />
                             </div>
@@ -304,19 +382,31 @@
                         </div>
                     </header>
 
-                    {/* Settings Modal (Inline) */}
+                    {/* Settings Modal */}
                     {showSettings && (
                         <div className="max-w-3xl mx-auto px-6 mb-6 animate-fade-in">
-                            <div className="p-6 rounded-2xl neumorph-inset flex gap-3 items-center">
-                                <Icons.Key className="w-5 h-5 text-[var(--accent)] flex-shrink-0" />
-                                <input 
-                                    type="password" 
-                                    value={apiKey} 
-                                    onChange={(e) => setApiKey(e.target.value)} 
-                                    placeholder="Enter your Gemini API Key here..."
-                                    className="flex-grow bg-transparent outline-none text-[var(--text-main)] placeholder-opacity-50"
-                                />
-                                <button onClick={saveApiKey} className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white font-bold shadow-md hover:opacity-90">Save</button>
+                            <div className="p-6 rounded-2xl neumorph-inset flex flex-col gap-4">
+                                <div className="flex gap-3 items-center">
+                                    <Icons.Key className="w-5 h-5 text-[var(--accent)] flex-shrink-0" />
+                                    <input 
+                                        type="password" 
+                                        value={apiKey} 
+                                        onChange={(e) => setApiKey(e.target.value)} 
+                                        placeholder="Enter your Gemini API Key here..."
+                                        className="flex-grow bg-transparent outline-none text-[var(--text-main)] placeholder-opacity-50"
+                                    />
+                                    <button onClick={saveApiKey} className="px-4 py-2 rounded-lg bg-[var(--accent)] text-white font-bold shadow-md hover:opacity-90">Save</button>
+                                </div>
+                                
+                                <div className="pt-4 border-t border-[var(--shadow-dark)] flex justify-between items-center text-sm">
+                                    <div className="text-[var(--text-muted)] flex items-center gap-2">
+                                        <Icons.Database className="w-4 h-4" />
+                                        Cached Words: {Object.keys(cache).length}
+                                    </div>
+                                    <button onClick={clearCache} className="text-red-500 hover:text-red-700 font-medium text-xs uppercase tracking-wider">
+                                        Clear Cache
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     )}
@@ -342,16 +432,31 @@
                                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Icons.ArrowRight className="w-6 h-6" />}
                             </button>
                         </div>
+                    </div>
 
-                        {/* History Chips */}
-                        {history.length > 0 && (
-                            <div className="flex flex-wrap gap-3 mt-6 pl-2 items-center">
-                                <div className="flex items-center gap-2 mr-2">
-                                    <span className="flex items-center gap-1 text-xs font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-60"><Icons.History className="w-3 h-3" /> Recent</span>
-                                    <button onClick={clearHistory} className="p-1 rounded-full hover:bg-[var(--text-muted)]/10 text-[var(--text-muted)] transition-colors" title="Clear History">
-                                        <Icons.Trash className="w-3 h-3" />
-                                    </button>
-                                </div>
+                    {/* Favorites/History Toggle & Chips */}
+                    <div className="max-w-3xl mx-auto px-6 mt-6">
+                         {/* Only show if no data currently displayed */}
+                        {!data && (
+                            <div className="flex gap-4 mb-4 border-b border-[var(--shadow-dark)] pb-2">
+                                <button 
+                                    onClick={() => setView('home')} 
+                                    className={`pb-2 text-sm font-bold uppercase tracking-wider transition-colors ${view === 'home' ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]' : 'text-[var(--text-muted)] opacity-60'}`}
+                                >
+                                    Recent
+                                </button>
+                                <button 
+                                    onClick={() => setView('favorites')} 
+                                    className={`pb-2 text-sm font-bold uppercase tracking-wider transition-colors ${view === 'favorites' ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]' : 'text-[var(--text-muted)] opacity-60'}`}
+                                >
+                                    Favorites ({favorites.length})
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Recent History Chips */}
+                        {view === 'home' && !data && history.length > 0 && (
+                            <div className="flex flex-wrap gap-3 animate-fade-in">
                                 {history.map((w, i) => (
                                     <button 
                                         key={i} 
@@ -361,15 +466,38 @@
                                         {w}
                                     </button>
                                 ))}
+                                <button onClick={clearHistory} className="ml-auto p-1 rounded-full hover:bg-[var(--text-muted)]/10 text-[var(--text-muted)] transition-colors" title="Clear History">
+                                    <Icons.Trash className="w-4 h-4" />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Favorites Chips */}
+                        {view === 'favorites' && !data && (
+                            <div className="flex flex-wrap gap-3 animate-fade-in">
+                                {favorites.length === 0 ? (
+                                    <div className="text-[var(--text-muted)] italic opacity-60">No favorites yet. Star a word to save it here.</div>
+                                ) : (
+                                    favorites.map((w, i) => (
+                                        <button 
+                                            key={i} 
+                                            onClick={() => { setQuery(w); handleSearch(w); }}
+                                            className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--bg-panel)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)] hover:text-white transition-all"
+                                        >
+                                            <Icons.Star className="w-3 h-3 inline mr-1 fill-current" />
+                                            {w}
+                                        </button>
+                                    ))
+                                )}
                             </div>
                         )}
                     </div>
 
                     {/* Content Area */}
-                    <main className="max-w-3xl mx-auto px-6 mt-10">
+                    <main className="max-w-3xl mx-auto px-6 mt-8">
                         {error && <div className="p-4 rounded-xl bg-red-100 text-red-600 text-center font-medium">{error}</div>}
 
-                        {!data && !loading && (
+                        {!data && !loading && view === 'home' && history.length === 0 && (
                             <div className="text-center py-20 opacity-30 select-none">
                                 <div className="inline-block p-6 rounded-full neumorph mb-4">
                                     <Icons.BookOpen className="w-12 h-12 text-[var(--accent)]" />
@@ -386,29 +514,53 @@
                                 <section className="neumorph p-8 relative overflow-hidden">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--accent)] blur-[80px] opacity-20 pointer-events-none"></div>
                                     
-                                    {/* MAIN WORD (Input Form) */}
-                                    <div className="flex flex-col md:flex-row md:items-baseline gap-4 mb-2">
-                                        <h1 className="text-5xl font-bold tracking-tight text-[var(--text-main)]">{data.mainWord}</h1>
+                                    {/* Actions Row */}
+                                    <div className="flex justify-between items-start mb-2">
                                         <div className="flex items-center gap-3">
-                                            <button onClick={() => speak(data.mainWord)} className="p-2 rounded-full neumorph-btn text-[var(--accent)] hover:scale-110 active:scale-95 transition-transform"><Icons.Volume2 className="w-5 h-5" /></button>
-                                            <span className="font-mono text-[var(--text-muted)] text-lg">/{data.mainIPA}/</span>
+                                            {/* Normal Speed */}
+                                            <button onClick={() => speak(data.mainWord)} className="p-2 rounded-full neumorph-btn text-[var(--accent)] hover:scale-110 active:scale-95 transition-transform" title="Normal Speed">
+                                                <Icons.Volume2 className="w-5 h-5" />
+                                            </button>
+                                            {/* Slow Speed */}
+                                            <button onClick={() => speak(data.mainWord, 0.6)} className="p-2 rounded-full neumorph-btn text-[var(--text-muted)] hover:text-[var(--accent)] hover:scale-110 active:scale-95 transition-transform" title="Slow Speed">
+                                                <Icons.Volume1 className="w-4 h-4" />
+                                            </button>
+                                            <span className="font-mono text-[var(--text-muted)] text-lg ml-2">/{data.mainIPA}/</span>
+                                        </div>
+                                        
+                                        <div className="flex gap-2">
+                                            {/* Cache Indicator */}
+                                            {data.fromCache && (
+                                                <div className="p-2 rounded-full neumorph-btn text-[var(--cached-badge)] cursor-help" title="Loaded from Local Cache (No API cost)">
+                                                    <Icons.Lightning className="w-5 h-5 fill-current" />
+                                                </div>
+                                            )}
+                                            {/* Favorite Toggle */}
+                                            <button 
+                                                onClick={() => toggleFavorite(data.mainWord)} 
+                                                className={`p-2 rounded-full neumorph-btn transition-colors ${favorites.includes(data.mainWord) ? 'text-[var(--star-active)]' : 'text-[var(--text-muted)] hover:text-[var(--star-active)]'}`}
+                                            >
+                                                <Icons.Star className="w-6 h-6" fill={favorites.includes(data.mainWord) ? "currentColor" : "none"} />
+                                            </button>
                                         </div>
                                     </div>
+                                    
+                                    {/* MAIN WORD */}
+                                    <h1 className="text-5xl font-bold tracking-tight text-[var(--text-main)] mb-4">{data.mainWord}</h1>
                                     
                                     <div className="flex flex-wrap items-center gap-4 mb-6">
                                         <span className="px-3 py-1 rounded-lg bg-[var(--bg-body)] border border-[var(--shadow-dark)] text-sm font-bold italic text-[var(--text-muted)]">{data.pos}</span>
                                         <span className="text-xl font-medium tracking-wide text-[var(--text-main)]">{renderSyllables(data.mainSyllables)}</span>
                                     </div>
 
-                                    {/* ROOT WORD SECTION (If different or explicit) */}
+                                    {/* ROOT WORD SECTION */}
                                     {data.root && data.root.word.toLowerCase() !== data.mainWord.toLowerCase() && (
-                                        <div className="mb-6 p-4 rounded-xl bg-[var(--bg-body)]/50 border border-[var(--shadow-dark)]/50">
+                                        <div className="mb-6 p-4 rounded-xl bg-[var(--bg-body)]/50 border border-[var(--shadow-dark)]/50 cursor-pointer hover:bg-[var(--bg-body)] transition-colors" onClick={() => handleSearch(data.root.word)}>
                                             <div className="text-xs font-bold uppercase tracking-wider text-[var(--accent)] mb-2 flex items-center gap-2">
-                                                <Icons.Layers className="w-3 h-3" /> Root Word (原型)
+                                                <Icons.Layers className="w-3 h-3" /> Root Word (Click to analyze)
                                             </div>
                                             <div className="flex flex-wrap items-center gap-4">
-                                                <span className="text-xl font-bold text-[var(--text-main)]">{data.root.word}</span>
-                                                <button onClick={() => speak(data.root.word)} className="p-1.5 rounded-full bg-[var(--bg-panel)] shadow-sm text-[var(--text-muted)] hover:text-[var(--accent)] transition-colors"><Icons.Volume2 className="w-4 h-4" /></button>
+                                                <span className="text-xl font-bold text-[var(--text-main)] underline decoration-[var(--accent)]/30 decoration-2 underline-offset-4">{data.root.word}</span>
                                                 <span className="font-mono text-sm text-[var(--text-muted)]">/{data.root.ipa}/</span>
                                                 <span className="text-sm font-medium opacity-80">{renderSyllables(data.root.syllables)}</span>
                                             </div>
@@ -416,13 +568,18 @@
                                         </div>
                                     )}
 
-                                    {/* FAMILY / FORMS */}
+                                    {/* FAMILY / FORMS (Now Clickable) */}
                                     {data.family && (
                                         <div className="mb-6 flex flex-wrap gap-2">
                                             {data.family.map((f, i) => (
-                                                <span key={i} className="px-2 py-1 rounded text-xs font-medium bg-[var(--bg-body)] text-[var(--text-muted)] border border-transparent hover:border-[var(--accent)] transition-colors cursor-default" title={f.form}>
-                                                    {f.word}
-                                                </span>
+                                                <button 
+                                                    key={i} 
+                                                    onClick={() => handleSearch(f.word)}
+                                                    className="px-2 py-1 rounded text-xs font-medium bg-[var(--bg-body)] text-[var(--text-muted)] border border-transparent hover:border-[var(--accent)] hover:text-[var(--accent)] transition-colors" 
+                                                    title={`Analyze: ${f.word}`}
+                                                >
+                                                    {f.word} <span className="opacity-50 text-[10px]">({f.form})</span>
+                                                </button>
                                             ))}
                                         </div>
                                     )}
@@ -451,18 +608,19 @@
                                     </div>
                                 </section>
 
-                                {/* 3. Nuance & Confusion + Collocations + Phrases (Stacked) */}
+                                {/* 3. Nuance & Phrases */}
                                 <div className="grid grid-cols-1 gap-6">
                                     <section className="neumorph p-6">
                                         <div className="flex items-center gap-2 mb-4 text-[var(--text-muted)]">
                                             <Icons.Brain className="w-5 h-5" />
                                             <h3 className="font-bold uppercase tracking-wider text-sm">{data.nuance.title}</h3>
                                         </div>
-                                        <p className="text-[var(--text-main)] leading-relaxed">
+                                        <p className="text-[var(--text-main)] leading-relaxed whitespace-pre-line">
                                             {data.nuance.content}
                                         </p>
                                     </section>
 
+                                    {/* Collocations */}
                                     <section className="neumorph p-6">
                                         <div className="flex items-center gap-2 mb-4 text-[var(--text-muted)]">
                                             <Icons.Anchor className="w-5 h-5" />
@@ -470,9 +628,9 @@
                                         </div>
                                         <div className="flex flex-col gap-3">
                                             {data.collocations.map((col, i) => (
-                                                <div key={i} className="flex flex-col gap-1 p-3 rounded-lg hover:bg-[var(--bg-body)] transition-colors border border-transparent hover:border-[var(--shadow-dark)]" onClick={() => col.sent && speak(col.sent)}>
-                                                    <div className="flex flex-wrap items-baseline gap-x-3 cursor-pointer">
-                                                        <span className="font-medium text-[var(--text-main)] text-lg hover:text-[var(--accent)]">{col.en}</span>
+                                                <div key={i} className="flex flex-col gap-1 p-3 rounded-lg hover:bg-[var(--bg-body)] transition-colors border border-transparent hover:border-[var(--shadow-dark)] cursor-pointer group" onClick={() => col.sent && speak(col.sent)}>
+                                                    <div className="flex flex-wrap items-baseline gap-x-3">
+                                                        <span className="font-medium text-[var(--text-main)] text-lg group-hover:text-[var(--accent)] transition-colors">{col.en}</span>
                                                         <span className="text-sm text-[var(--accent)] font-medium">{col.ch}</span>
                                                     </div>
                                                     {col.sent && (
@@ -485,7 +643,7 @@
                                         </div>
                                     </section>
                                     
-                                    {/* NEW: Phrases & Usages Section */}
+                                    {/* Phrases */}
                                     {data.phrases && data.phrases.length > 0 && (
                                         <section className="neumorph p-6">
                                             <div className="flex items-center gap-2 mb-4 text-[var(--text-muted)]">
@@ -494,9 +652,9 @@
                                             </div>
                                             <div className="space-y-4">
                                                 {data.phrases.map((item, i) => (
-                                                    <div key={i} className="p-4 rounded-xl bg-[var(--bg-body)] border border-transparent hover:border-[var(--accent)] transition-all cursor-pointer" onClick={() => item.sent && speak(item.sent)}>
+                                                    <div key={i} className="p-4 rounded-xl bg-[var(--bg-body)] border border-transparent hover:border-[var(--accent)] transition-all cursor-pointer group" onClick={() => item.sent && speak(item.sent)}>
                                                         <div className="flex flex-wrap items-baseline gap-2 mb-1">
-                                                            <span className="font-bold text-[var(--text-main)] text-lg hover:text-[var(--accent)]">{item.en}</span>
+                                                            <span className="font-bold text-[var(--text-main)] text-lg group-hover:text-[var(--accent)]">{item.en}</span>
                                                         </div>
                                                         <div className="flex flex-col sm:flex-row gap-2 sm:items-center text-sm mb-2">
                                                             <span className="font-medium text-[var(--accent)]">{item.ch}</span>
@@ -521,13 +679,15 @@
 
                                 {/* 4. Contextual Examples */}
                                 <section className="neumorph p-8">
-                                    <h3 className="font-bold uppercase tracking-wider text-sm text-[var(--text-muted)] mb-6">Contextual Examples</h3>
+                                    <h3 className="font-bold uppercase tracking-wider text-sm text-[var(--text-muted)] mb-6">Contextual Examples (Click to Listen)</h3>
                                     <div className="space-y-6">
                                         {data.sentences.map((sent, idx) => (
                                             <div key={idx} className="group cursor-pointer" onClick={() => speak(sent.en)}>
                                                 <div className="flex justify-between items-center mb-1">
                                                     <span className="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-[var(--bg-body)] text-[var(--accent)]">{sent.ctx}</span>
-                                                    <Icons.Volume2 className="w-4 h-4 text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                                                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                       <Icons.Volume2 className="w-4 h-4 text-[var(--text-muted)]" />
+                                                    </div>
                                                 </div>
                                                 <p className="text-lg text-[var(--text-main)] group-hover:text-[var(--accent)] transition-colors duration-200 font-medium">
                                                     {sent.en}
@@ -542,7 +702,7 @@
                                 </section>
 
                                 <div className="text-center pt-8 pb-4 opacity-50 text-xs tracking-widest">
-                                    LOBSTER WORD DIVE ENGINE
+                                    LOBSTER WORD DIVE ENGINE v3 (Cached)
                                 </div>
                             </div>
                         )}
