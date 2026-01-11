@@ -401,25 +401,32 @@
                 // Shuffle and pick 2 strategies to mix
                 const shuffledStrategies = [...vocabStrategies].sort(() => 0.5 - Math.random());
                 const selectedStrategies = shuffledStrategies.slice(0, 2);
-                const mixedVocabStrategy = `Mix of: 1. ${selectedStrategies[0]} AND 2. ${selectedStrategies[1]}. Avoid generic words.`;
+                let mixedVocabStrategy = `Mix of: 1. ${selectedStrategies[0]} AND 2. ${selectedStrategies[1]}. Avoid generic words.`;
                 
                 // --- LEVEL INSTRUCTION MAPPING (New Feature) ---
                 let levelInstruction = "";
                 let questionLevelInstruction = "";
+                let grammarTarget = ""; // Define variable for dynamic grammar target
 
                 if (selectedDiff.value === "Novice" || selectedDiff.value === "Beginner") {
                     levelInstruction = "Use strictly SIMPLE SENTENCES (SVO). Avoid complex clauses. Use high-frequency words (Dolch list). Keep tenses simple (Simple Present/Past/Future).";
                     questionLevelInstruction = "Focus on **FACT RETRIEVAL** (Who, What, Where). Answers should be found directly in the text. Simple sentence output.";
+                    mixedVocabStrategy = "Focus on **High Frequency / Basic words**. Keep it simple."; // Simplify vocab for low levels
+                    grammarTarget = "Beginner/Elementary learners. Focus on foundational structures."; // Dynamic grammar target
                 } else if (selectedDiff.value === "High Beginner" || selectedDiff.value === "Pre-Intermediate") {
                     levelInstruction = "Use compound sentences (and, but, so). Introduce simple relative clauses. Use basic perfect tenses occasionally.";
                     questionLevelInstruction = "Focus on **UNDERSTANDING** (Why, How). Ask about feelings or simple cause-and-effect.";
+                    mixedVocabStrategy = "Focus on **Common words** and simple phrases."; // Simplify vocab for lower intermediate
+                    grammarTarget = "High Beginner learners. Focus on basic sentence linking."; // Dynamic grammar target
                 } else if (selectedDiff.value === "Intermediate") {
                     levelInstruction = "Use complex sentences with dependent clauses. Use conditionals (If...). Use varied tenses naturally.";
                     questionLevelInstruction = "Focus on **OPINION & EXPERIENCE**. Ask the reader to connect the text to their own life or give a reason for an opinion.";
+                    grammarTarget = "Intermediate learners. Focus on connecting ideas and clarity."; // Dynamic grammar target
                 } else {
                     // Upper-Intermediate, Advanced
                     levelInstruction = "Use sophisticated sentence structures (inversion, subjunctive, mixed conditionals). Use nuanced vocabulary and idiomatic expressions naturally.";
                     questionLevelInstruction = "Focus on **CRITICAL THINKING & IMPLICATION**. Ask about the author's tone, abstract concepts, societal impact, or hypothetical situations.";
+                    grammarTarget = "Advanced learners / Native-like nuance."; // Dynamic grammar target
                 }
 
                 // --- PROMPT ENGINEERING BASED ON STYLE (Enhanced) ---
@@ -456,6 +463,8 @@
                     **STYLE INSTRUCTION:** ${styleInstruction}
                     **LEVEL INSTRUCTION:** ${levelInstruction} (${selectedDiff.value})
                     
+                    **IMPORTANT:** The **LEVEL INSTRUCTION** takes precedence over **STYLE**. If the style requires complex language but the level is 'Novice', simplify the language while keeping the *tone*.
+                    
                     **CRITICAL: NATIVE NUANCE**
                     - **Avoid "Textbook English".** Use collocations and phrasal verbs that native speakers actually use in this context.
                     - Ensure the tone matches the selected style perfectly.
@@ -474,7 +483,7 @@
                           - Topic: "Coffee" -> Title: "The Art of the Morning Brew" (NOT "About Coffee")
                     
                     **CRITICAL: GRAMMAR FOCUS**
-                    - **Target:** Advanced learners / Native-like nuance.
+                    - **Target:** ${grammarTarget}
                     - **FORBIDDEN:** Do NOT list basic grammar rules (e.g., simple tenses, singular/plural, subject-verb agreement) unless used for a specific rhetorical effect.
                     - **FOCUS ON:** Sentence variety, rhetorical devices (inversion, parallelism, emphasis), cohesive devices, tone shifting, advanced clause structures, or subtle modality.
                     - **EXPLANATION LANGUAGE:** The explanation MUST be in **Traditional Chinese (繁體中文)**. It should explain the *feeling*, *nuance*, or *function* of the grammar, not just the formula. Use analogies if possible.
@@ -494,7 +503,7 @@
                     **JSON SCHEMA:**
                     {
                         "title": "Title",
-                        "difficulty": "Level",
+                        "difficulty": "${selectedDiff.value}",
                         "theme": "Keywords (Briefly mention the angle/strategy used here)",
                         "article": "Text with <b>bold</b> words...",
                         "vocabulary": [
@@ -651,7 +660,7 @@
                                     <div className="pb-8 mb-8 border-b border-dashed border-gray-300">
                                         <h1 className="text-4xl font-bold mb-4 leading-tight" style={{ color: 'var(--text-main)' }}>{material.title}</h1>
                                         <div className="flex flex-wrap items-center gap-6 text-sm font-sans opacity-70">
-                                            <span className="flex items-center gap-2 uppercase tracking-widest font-bold">{DIFFICULTY_OPTIONS.find(d => d.value === material.difficulty)?.label || material.difficulty}</span>
+                                            <span className="flex items-center gap-2 uppercase tracking-widest font-bold">{DIFFICULTY_OPTIONS.find(d => d.value === material.difficulty)?.sub || material.difficulty}</span>
                                             <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent)]"></span>
                                             <span className="italic">Style: {STYLE_OPTIONS.find(s => s.value === style)?.label}</span>
                                         </div>
