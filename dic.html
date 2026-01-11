@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LOBSTER Word Dive v3 (Cached)</title>
+    <title>LOBSTER Word Dive</title>
     <link rel="icon" href="LOBSTERWordDive.png" type="image/png">
     <link rel="apple-touch-icon" href="LOBSTERWordDive.png">
     
@@ -139,7 +139,10 @@
             Trash: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/></svg>,
             Star: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={props.fill || "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>,
             Lightning: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>,
-            Database: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+            Database: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>,
+            ChevronDown: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>,
+            ChevronUp: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>,
+            Folder: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 2H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2Z"/></svg>
         };
 
         const WordDiveApp = () => {
@@ -148,12 +151,13 @@
             const [loading, setLoading] = useState(false);
             const [history, setHistory] = useState([]);
             const [favorites, setFavorites] = useState([]);
-            const [cache, setCache] = useState({}); // NEW: Cache State
+            const [cache, setCache] = useState({});
             const [error, setError] = useState('');
             const [apiKey, setApiKey] = useState('');
             const [showSettings, setShowSettings] = useState(false);
             const [darkMode, setDarkMode] = useState(false);
-            const [view, setView] = useState('home'); 
+            const [view, setView] = useState('home'); // 'home' (Recent) | 'favorites'
+            const [showPanel, setShowPanel] = useState(true); // Control Library Panel Visibility
 
             // Init
             useEffect(() => {
@@ -232,9 +236,11 @@
                 
                 if (overrideQuery) setQuery(overrideQuery);
 
-                const cacheKey = searchTerm.trim().toLowerCase();
-                setView('home'); // Force view to home on search
+                // Auto-collapse panel when searching to focus on content
+                setShowPanel(false);
 
+                const cacheKey = searchTerm.trim().toLowerCase();
+                
                 // 1. Check Cache
                 if (cache[cacheKey]) {
                     console.log("Loading from cache:", cacheKey);
@@ -366,7 +372,7 @@
                     
                     {/* Header */}
                     <header className="pt-6 pb-2 px-6 flex justify-between items-center max-w-3xl mx-auto">
-                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setData(null); setView('home'); }}>
+                        <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setData(null); setShowPanel(true); }}>
                             <div className="p-2.5 rounded-xl bg-[var(--bg-panel)] shadow-[5px_5px_10px_var(--shadow-dark),-5px_-5px_10px_var(--shadow-light)] text-[var(--accent)]">
                                 <Icons.Anchor className="w-6 h-6" />
                             </div>
@@ -413,7 +419,7 @@
 
                     {/* Search Section */}
                     <div className="max-w-3xl mx-auto px-6 mt-8">
-                        <div className="relative group">
+                        <div className="relative group z-20">
                             <input 
                                 type="text" 
                                 value={query}
@@ -432,72 +438,109 @@
                                 {loading ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"/> : <Icons.ArrowRight className="w-6 h-6" />}
                             </button>
                         </div>
-                    </div>
-
-                    {/* Favorites/History Toggle & Chips */}
-                    <div className="max-w-3xl mx-auto px-6 mt-6">
-                         {/* Only show if no data currently displayed */}
-                        {!data && (
-                            <div className="flex gap-4 mb-4 border-b border-[var(--shadow-dark)] pb-2">
-                                <button 
-                                    onClick={() => setView('home')} 
-                                    className={`pb-2 text-sm font-bold uppercase tracking-wider transition-colors ${view === 'home' ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]' : 'text-[var(--text-muted)] opacity-60'}`}
-                                >
-                                    Recent
-                                </button>
-                                <button 
-                                    onClick={() => setView('favorites')} 
-                                    className={`pb-2 text-sm font-bold uppercase tracking-wider transition-colors ${view === 'favorites' ? 'text-[var(--accent)] border-b-2 border-[var(--accent)]' : 'text-[var(--text-muted)] opacity-60'}`}
-                                >
-                                    Favorites ({favorites.length})
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Recent History Chips */}
-                        {view === 'home' && !data && history.length > 0 && (
-                            <div className="flex flex-wrap gap-3 animate-fade-in">
-                                {history.map((w, i) => (
-                                    <button 
-                                        key={i} 
-                                        onClick={() => { setQuery(w); handleSearch(w); }}
-                                        className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--bg-panel)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:translate-y-[-1px] active:shadow-[inset_2px_2px_4px_var(--shadow-dark),inset_-2px_-2px_4px_var(--shadow-light)] transition-all"
-                                    >
-                                        {w}
-                                    </button>
-                                ))}
-                                <button onClick={clearHistory} className="ml-auto p-1 rounded-full hover:bg-[var(--text-muted)]/10 text-[var(--text-muted)] transition-colors" title="Clear History">
-                                    <Icons.Trash className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-
-                        {/* Favorites Chips */}
-                        {view === 'favorites' && !data && (
-                            <div className="flex flex-wrap gap-3 animate-fade-in">
-                                {favorites.length === 0 ? (
-                                    <div className="text-[var(--text-muted)] italic opacity-60">No favorites yet. Star a word to save it here.</div>
-                                ) : (
-                                    favorites.map((w, i) => (
-                                        <button 
-                                            key={i} 
-                                            onClick={() => { setQuery(w); handleSearch(w); }}
-                                            className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--bg-panel)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)] hover:text-white transition-all"
+                        
+                        {/* Collapsible Library Control Bar */}
+                        <div className="relative mt-2 z-10">
+                            {/* The Toggle Bar */}
+                            <div className="flex justify-between items-center px-4 py-2">
+                                <div className="flex items-center gap-4">
+                                    {showPanel ? (
+                                        // Panel is OPEN: Show Tabs
+                                        <div className="flex gap-4 animate-fade-in">
+                                            <button 
+                                                onClick={() => setView('home')} 
+                                                className={`text-sm font-bold uppercase tracking-wider transition-colors ${view === 'home' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-60 hover:opacity-100'}`}
+                                            >
+                                                Recent
+                                            </button>
+                                            <button 
+                                                onClick={() => setView('favorites')} 
+                                                className={`text-sm font-bold uppercase tracking-wider transition-colors ${view === 'favorites' ? 'text-[var(--accent)]' : 'text-[var(--text-muted)] opacity-60 hover:opacity-100'}`}
+                                            >
+                                                Favorites ({favorites.length})
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        // Panel is CLOSED: Show summary hint
+                                        <div 
+                                            onClick={() => setShowPanel(true)}
+                                            className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-[var(--text-muted)] opacity-60 hover:opacity-100 cursor-pointer hover:text-[var(--accent)] transition-colors"
                                         >
-                                            <Icons.Star className="w-3 h-3 inline mr-1 fill-current" />
-                                            {w}
-                                        </button>
-                                    ))
-                                )}
+                                            <Icons.Folder className="w-4 h-4" />
+                                            Library <span className="text-[10px] opacity-70">({history.length} recent, {favorites.length} saved)</span>
+                                        </div>
+                                    )}
+                                </div>
+                                
+                                <button 
+                                    onClick={() => setShowPanel(!showPanel)} 
+                                    className="p-1.5 rounded-full hover:bg-[var(--text-muted)]/10 text-[var(--text-muted)] transition-colors"
+                                    title={showPanel ? "Collapse Library" : "Expand Library"}
+                                >
+                                    {showPanel ? <Icons.ChevronUp className="w-5 h-5" /> : <Icons.ChevronDown className="w-5 h-5" />}
+                                </button>
                             </div>
-                        )}
+
+                            {/* Collapsible Content */}
+                            {showPanel && (
+                                <div className="pt-2 pb-4 animate-fade-in origin-top">
+                                    {/* Recent History Chips */}
+                                    {view === 'home' && (
+                                        <div className="flex flex-wrap gap-3 px-2">
+                                            {history.length > 0 ? (
+                                                <>
+                                                    {history.map((w, i) => (
+                                                        <button 
+                                                            key={i} 
+                                                            onClick={() => { setQuery(w); handleSearch(w); }}
+                                                            className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--bg-panel)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] text-[var(--text-muted)] hover:text-[var(--accent)] hover:translate-y-[-1px] active:shadow-[inset_2px_2px_4px_var(--shadow-dark),inset_-2px_-2px_4px_var(--shadow-light)] transition-all"
+                                                        >
+                                                            {w}
+                                                        </button>
+                                                    ))}
+                                                    <button onClick={clearHistory} className="ml-auto p-1 rounded-full hover:bg-[var(--text-muted)]/10 text-[var(--text-muted)] transition-colors" title="Clear History">
+                                                        <Icons.Trash className="w-4 h-4" />
+                                                    </button>
+                                                </>
+                                            ) : (
+                                                <div className="w-full text-center text-[var(--text-muted)] italic opacity-50 py-2">
+                                                    No recent history.
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {/* Favorites Chips */}
+                                    {view === 'favorites' && (
+                                        <div className="flex flex-wrap gap-3 px-2">
+                                            {favorites.length === 0 ? (
+                                                <div className="w-full text-center text-[var(--text-muted)] italic opacity-50 py-2">
+                                                    No favorites yet. Star a word to save it here.
+                                                </div>
+                                            ) : (
+                                                favorites.map((w, i) => (
+                                                    <button 
+                                                        key={i} 
+                                                        onClick={() => { setQuery(w); handleSearch(w); }}
+                                                        className="px-3 py-1 rounded-full text-sm font-medium bg-[var(--bg-panel)] shadow-[3px_3px_6px_var(--shadow-dark),-3px_-3px_6px_var(--shadow-light)] text-[var(--accent)] border border-[var(--accent)]/20 hover:bg-[var(--accent)] hover:text-white transition-all"
+                                                    >
+                                                        <Icons.Star className="w-3 h-3 inline mr-1 fill-current" />
+                                                        {w}
+                                                    </button>
+                                                ))
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     {/* Content Area */}
-                    <main className="max-w-3xl mx-auto px-6 mt-8">
+                    <main className="max-w-3xl mx-auto px-6 mt-2">
                         {error && <div className="p-4 rounded-xl bg-red-100 text-red-600 text-center font-medium">{error}</div>}
 
-                        {!data && !loading && view === 'home' && history.length === 0 && (
+                        {!data && !loading && (
                             <div className="text-center py-20 opacity-30 select-none">
                                 <div className="inline-block p-6 rounded-full neumorph mb-4">
                                     <Icons.BookOpen className="w-12 h-12 text-[var(--accent)]" />
@@ -508,7 +551,7 @@
                         )}
 
                         {data && (
-                            <div className="animate-fade-in space-y-8">
+                            <div className="animate-fade-in space-y-8 mt-6">
                                 
                                 {/* 1. Head Card: Word, Pronunciation, Basic Def */}
                                 <section className="neumorph p-8 relative overflow-hidden">
