@@ -374,6 +374,16 @@
                     "practical 'how-to' guide", "expert opinion and analysis", "beginner's journey"
                 ];
                 const randomAngle = angles[Math.floor(Math.random() * angles.length)];
+
+                // --- VOCABULARY STRATEGY (New Feature) ---
+                const vocabStrategies = [
+                    "Action-oriented: Focus on selecting strong, precise VERBS as keywords (e.g., 'scrutinize' instead of 'look').",
+                    "Descriptive: Focus on selecting vivid ADJECTIVES and sensory words as keywords.",
+                    "Conceptual: Focus on ABSTRACT NOUNS and concepts as keywords.",
+                    "Idiomatic: Focus on PHRASAL VERBS and natural collocations as keywords.",
+                    "Connector-focused: Focus on sophisticated TRANSITION WORDS and logical connectors as keywords (if appropriate for level)."
+                ];
+                const randomVocabStrategy = vocabStrategies[Math.floor(Math.random() * vocabStrategies.length)];
                 
                 // --- PROMPT ENGINEERING BASED ON STYLE ---
                 let styleInstruction = "";
@@ -398,24 +408,25 @@
                     **CRITICAL: VARIETY & ANGLE**
                     To avoid generic content, please write this specific article focusing on the **${randomAngle}** of the topic.
                     
+                    **CRITICAL: VOCABULARY SELECTION STRATEGY**
+                    **Strategy:** ${randomVocabStrategy}
+                    **Instruction:** actively try to avoid the top 10 most obvious/common words associated with this topic if possible. Choose synonyms that fit the level but offer variety.
+                    
                     **STYLE & TONE:** ${styleInstruction}
                     **LEVEL:** ${selectedDiff.value} (${selectedDiff.sub}). Adjust vocabulary and grammar complexity accordingly.
 
                     **CRITICAL RULES:**
                     1. **Natural:** Must sound HUMAN and NATIVE. No robotic phrasing.
                     2. **Variety:** Mix sentence lengths. Create rhythm. **Mix short, punchy sentences with longer, flowing ones.**
-                    3. **Vocabulary:** Let words emerge naturally. Do not force them.
+                    3. **Vocabulary:** Let words emerge naturally based on the strategy above.
                     4. **Structure:** 4-5 paragraphs.
-                    5. **Historical Accuracy:** **Do NOT invent specific dates.** If a date is uncertain, use approximate wording (e.g., "around the mid-20th century"). Never fabricate century numbers.
-                    6. **Human Tone:** Add at least one sentence that feels slightly casual or observational (e.g., "It’s funny how we often forget this..." or "You might notice that...") to increase the human feel.
+                    5. **Historical Accuracy:** **Do NOT invent specific dates.** If a date is uncertain, use approximate wording.
+                    6. **Human Tone:** Add at least one sentence that feels slightly casual or observational.
                     7. **Title Creativity:**
                         - The title must be creative, engaging, and specific to the article's content (the angle).
                         - **FORBIDDEN:** Do NOT simply use the topic name "${topic}" as the title.
-                        - **FORBIDDEN:** Do NOT use titles like "The Importance of ${topic}" or "Understanding ${topic}".
                         - **GOOD EXAMPLES:**
                           - Topic: "Coffee" -> Title: "The Art of the Morning Brew" (NOT "About Coffee")
-                          - Topic: "Urban Dynamics" -> Title: "Concrete Jungles and Quiet Corners" (NOT "Urban Dynamics Article")
-                          - Topic: "Human Connection" -> Title: "Why We Need Strangers" (NOT "Human Connection")
                     
                     **FORMAT:**
                     - Bold 15-20 key words in the article using \`<b>\`. **CRITICAL: EVERY BOLD WORD MUST BE IN THE VOCABULARY LIST.**
@@ -426,7 +437,7 @@
                     {
                         "title": "Title",
                         "difficulty": "Level",
-                        "theme": "Keywords",
+                        "theme": "Keywords (Briefly mention the angle/strategy used here)",
                         "article": "Text with <b>bold</b> words...",
                         "vocabulary": [
                             { "word": "Word", "pos": "n./v.", "chinese": "Def", "ipa": "IPA", "phonics": "pho-<b>nics</b>", "englishDef": "Def", "instantUnd": "Metaphor (in Traditional Chinese)", "collocations": "Usage", "sentences": [{ "en": "Ex 1", "ch": "Trans 1" }, { "en": "Ex 2", "ch": "Trans 2" }, { "en": "Ex 3", "ch": "Trans 3" }] }
@@ -437,7 +448,6 @@
                     }
                 `;
         
-                // Improved Retry Logic with higher temperature for variety
                 const fetchWithRetry = async (retries = 3, delay = 2000) => {
                     try {
                         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${userApiKey}`, {
@@ -448,7 +458,7 @@
                                 systemInstruction: { parts: [{ text: systemPrompt }] },
                                 generationConfig: { 
                                     responseMimeType: "application/json",
-                                    temperature: 1.1 // Higher temperature for more creative/varied output
+                                    temperature: 1.2 
                                 }
                             })
                         });
@@ -480,10 +490,18 @@
                     let textResponse = result.candidates?.[0]?.content?.parts?.[0]?.text;
                     if (!textResponse) throw new Error("No content generated");
 
-                    // Fix for JSON parsing error: Remove markdown code fences
-                    // Sometimes the API returns ```json ... ``` or just ``` ... ```
-                    if (textResponse.startsWith('```')) {
-                         textResponse = textResponse.replace(/^```json\s*/, '').replace(/^```\s*/, '').replace(/\s*```$/, '');
+                    // --- ROBUST JSON PARSING LOGIC ---
+                    // Remove markdown fences if present (e.g., ```json ... ```)
+                    const jsonMatch = textResponse.match(/```json\s*([\s\S]*?)\s*```/) || textResponse.match(/```\s*([\s\S]*?)\s*```/);
+                    if (jsonMatch) {
+                        textResponse = jsonMatch[1];
+                    }
+
+                    // Further cleanup: find first { and last } to ignore conversational filler
+                    const startIndex = textResponse.indexOf('{');
+                    const endIndex = textResponse.lastIndexOf('}');
+                    if (startIndex !== -1 && endIndex !== -1) {
+                        textResponse = textResponse.substring(startIndex, endIndex + 1);
                     }
                     
                     setMaterial(JSON.parse(textResponse));
@@ -528,13 +546,11 @@
                                 </div>
                                 
                                 <div className="grid grid-cols-1 gap-6 pt-2">
-                                    {/* Level Selection Row */}
                                     <div className="space-y-3">
                                         <label className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider opacity-70"><Icons.Settings className="w-4 h-4" /> 2. Level</label>
                                         <div className="relative"><select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="w-full pl-6 pr-10 py-4 bg-[var(--bg-panel)] rounded-2xl shadow-neumorph appearance-none font-medium outline-none cursor-pointer hover:shadow-neumorph-hover transition-all text-sm" style={{ color: 'var(--text-main)' }}>{DIFFICULTY_OPTIONS.map(opt => <option key={opt.value} value={opt.value}>{opt.label} — {opt.sub}</option>)}</select><Icons.ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[var(--accent)] pointer-events-none w-5 h-5" /></div>
                                     </div>
 
-                                    {/* Style & Generate Button Row */}
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                         <div className="space-y-3">
                                             <label className="flex items-center gap-2 text-sm font-bold uppercase tracking-wider opacity-70"><Icons.PenTool className="w-4 h-4" /> 3. Style</label>
