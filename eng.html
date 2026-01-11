@@ -130,7 +130,8 @@
             Volume2: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>,
             Feather: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><line x1="16" x2="2" y1="8" y2="22"/><line x1="17.5" x2="9" y1="15" y2="15"/></svg>,
             Key: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="7.5" cy="15.5" r="5.5"/><path d="m21 2-9.6 9.6"/><path d="m15.5 7.5 3 3L22 7l-3-3"/></svg>,
-            PenTool: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+            PenTool: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m12 19 7-7 3 3-7 7-3-3z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="m2 2 7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>,
+            MessageSquare: (props) => <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         };
 
         const EnglishMaterialGenerator = () => {
@@ -208,6 +209,12 @@
                     md += `## 3. Grammar Focus\n\n`;
                     material.grammar.forEach(g => md += `### ${g.point}\n**核心概念:** ${g.core_concept}\n${g.explanation.replace(/<b>(.*?)<\/b>/g, '**$1**')}\n\n> *${g.example.replace(/<b>(.*?)<\/b>/g, '**$1**')}*\n> (${g.example_ch})\n\n`);
                 }
+                if (material.questions) {
+                    md += `## 4. Reflection & Output\n\n`;
+                    material.questions.forEach((q, idx) => {
+                        md += `### Q${idx + 1}: ${q.question}\n**Thinking Guide:** ${q.guide}\n\n`;
+                    });
+                }
                 navigator.clipboard.writeText(md).then(() => alert('Markdown copied!'));
             };
 
@@ -222,6 +229,12 @@
                 if (material.grammar) {
                     content += `<h2>3. Grammar Focus</h2>`;
                     material.grammar.forEach(g => content += `<div class="highlight"><h3>${g.point}</h3><p><b>Core Concept:</b> ${g.core_concept}</p><p>${g.explanation.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}</p><p style="font-style: italic; color: #556943;">"${g.example.replace(/<b>(.*?)<\/b>/g, '<b>$1</b>')}"</p><p style="font-size: 10pt; color: #666;">(${g.example_ch})</p></div>`);
+                }
+                if (material.questions) {
+                    content += `<h2>4. Reflection & Output</h2>`;
+                    material.questions.forEach((q, idx) => {
+                        content += `<div class="highlight"><h3>Q${idx + 1}: ${q.type}</h3><p><b>${q.question}</b></p><p style="color:#666;">💡 Guide: ${q.guide}</p></div>`;
+                    });
                 }
                 const source = 'data:application/vnd.ms-word;charset=utf-8,' + encodeURIComponent(header + content + '</body></html>');
                 const fileDownload = document.createElement("a");
@@ -337,6 +350,8 @@
                 { value: "Tech", label: "Tech & Future (Wired / The Verge)", desc: "Crisp, analytical, forward-looking, precise." },
                 { value: "Literary", label: "Literary (The New Yorker)", desc: "Sophisticated, narrative-driven, complex structures." },
                 { value: "Academic", label: "Academic (TOEIC / IELTS / Science)", desc: "Formal, objective, structured, vocabulary-rich." },
+                { value: "Business", label: "Business Professional (HBR / Email)", desc: "Concise, action-oriented, clear, polite but firm." },
+                { value: "OpEd", label: "Opinion / Op-Ed (NY Times)", desc: "Persuasive, strong thesis, rhetorical devices, compelling." },
                 { value: "Casual", label: "Casual (Blog / Podcast)", desc: "Conversational, friendly, idiomatic, relaxed." },
                 { value: "Fiction", label: "Fiction / Short Story", desc: "Narrative, creative, character-driven, immersive." }
             ];
@@ -388,20 +403,43 @@
                 const selectedStrategies = shuffledStrategies.slice(0, 2);
                 const mixedVocabStrategy = `Mix of: 1. ${selectedStrategies[0]} AND 2. ${selectedStrategies[1]}. Avoid generic words.`;
                 
-                // --- PROMPT ENGINEERING BASED ON STYLE ---
+                // --- LEVEL INSTRUCTION MAPPING (New Feature) ---
+                let levelInstruction = "";
+                let questionLevelInstruction = "";
+
+                if (selectedDiff.value === "Novice" || selectedDiff.value === "Beginner") {
+                    levelInstruction = "Use strictly SIMPLE SENTENCES (SVO). Avoid complex clauses. Use high-frequency words (Dolch list). Keep tenses simple (Simple Present/Past/Future).";
+                    questionLevelInstruction = "Focus on **FACT RETRIEVAL** (Who, What, Where). Answers should be found directly in the text. Simple sentence output.";
+                } else if (selectedDiff.value === "High Beginner" || selectedDiff.value === "Pre-Intermediate") {
+                    levelInstruction = "Use compound sentences (and, but, so). Introduce simple relative clauses. Use basic perfect tenses occasionally.";
+                    questionLevelInstruction = "Focus on **UNDERSTANDING** (Why, How). Ask about feelings or simple cause-and-effect.";
+                } else if (selectedDiff.value === "Intermediate") {
+                    levelInstruction = "Use complex sentences with dependent clauses. Use conditionals (If...). Use varied tenses naturally.";
+                    questionLevelInstruction = "Focus on **OPINION & EXPERIENCE**. Ask the reader to connect the text to their own life or give a reason for an opinion.";
+                } else {
+                    // Upper-Intermediate, Advanced
+                    levelInstruction = "Use sophisticated sentence structures (inversion, subjunctive, mixed conditionals). Use nuanced vocabulary and idiomatic expressions naturally.";
+                    questionLevelInstruction = "Focus on **CRITICAL THINKING & IMPLICATION**. Ask about the author's tone, abstract concepts, societal impact, or hypothetical situations.";
+                }
+
+                // --- PROMPT ENGINEERING BASED ON STYLE (Enhanced) ---
                 let styleInstruction = "";
                 if (style === "Magazine") {
-                    styleInstruction = "Write like a senior editor for Bon Appétit or Kinfolk. Use sensory details, elegant phrasing, and a warm, inviting tone. Focus on lifestyle, aesthetics, and human connection.";
+                    styleInstruction = "Write like a senior editor for Bon Appétit or Kinfolk. Focus on sensory details (sight, sound, taste) and set a mood. Use 'you' to engage the reader directly. Tone: Intimate, curated, and evocative.";
                 } else if (style === "Tech") {
-                    styleInstruction = "Write like a tech journalist for Wired or The Verge. Be crisp, analytical, and forward-looking. Use precise terminology but explain it clearly. Focus on innovation and impact.";
+                    styleInstruction = "Write like a tech journalist for Wired or The Verge. Be crisp, analytical, and forward-looking. Use precise verbs (e.g., 'disrupt', 'integrate') instead of generic ones. Focus on innovation, implications, and how it works.";
                 } else if (style === "Literary") {
-                    styleInstruction = "Write like a contributor to The New Yorker or The Atlantic. Use sophisticated vocabulary, varied sentence structures (long/short mix), and a narrative, storytelling approach.";
+                    styleInstruction = "Write like a contributor to The New Yorker. Use metaphors, similes, and varied sentence cadence (rhythm). Focus on the human condition and subtle observations. Avoid clichés.";
                 } else if (style === "Academic") {
-                    styleInstruction = "Write a formal, structured passage suitable for TOEIC Part 7 or IELTS Reading. Maintain objectivity, use transition words (However, Therefore), and focus on logic and facts.";
+                    styleInstruction = "Write a formal passage suitable for IELTS Reading or an academic journal. Use passive voice where appropriate, nominalization (turning verbs into nouns), and hedging words (e.g., 'suggests', 'indicates'). Tone: Objective and analytical.";
+                } else if (style === "Business") {
+                    styleInstruction = "Write like a professional in a top-tier firm (HBR style or executive memo). Be concise, clear, and action-oriented. Use professional collocations (e.g., 'drive growth', 'mitigate risk'). Tone: Polite, firm, and efficient.";
+                } else if (style === "OpEd") {
+                    styleInstruction = "Write a persuasive Op-Ed like for The New York Times. Have a strong, clear thesis. Use rhetorical questions and strong transitions. Tone: Convincing, thought-provoking, and opinionated.";
                 } else if (style === "Casual") {
-                    styleInstruction = "Write like a popular blogger or podcaster. Be friendly, conversational, and use idioms. It's okay to use contractions (don't, can't) and address the reader directly ('You might wonder...').";
+                    styleInstruction = "Write like a popular blogger or podcaster. Be friendly, conversational, and use phrasal verbs and idioms naturally. It's okay to use contractions and sentence fragments for effect. Tone: Relatable and relaxed.";
                 } else if (style === "Fiction") {
-                    styleInstruction = "Write a short creative fiction or narrative story. Focus on plot, character, and setting. Use descriptive language and dialogue to bring the story to life. Ensure it is immersive and engaging.";
+                    styleInstruction = "Write a short creative narrative. Focus on 'Show, Don't Tell'. Use dialogue and internal monologue to reveal character and setting. Tone: Immersive and storytelling-focused.";
                 }
 
                 const systemPrompt = `
@@ -415,8 +453,12 @@
                     **Strategy:** ${mixedVocabStrategy}
                     **Instruction:** actively try to avoid the top 10 most obvious/common words associated with this topic if possible. Choose synonyms that fit the level but offer variety.
                     
-                    **STYLE & TONE:** ${styleInstruction}
-                    **LEVEL:** ${selectedDiff.value} (${selectedDiff.sub}). Adjust vocabulary and grammar complexity accordingly.
+                    **STYLE INSTRUCTION:** ${styleInstruction}
+                    **LEVEL INSTRUCTION:** ${levelInstruction} (${selectedDiff.value})
+                    
+                    **CRITICAL: NATIVE NUANCE**
+                    - **Avoid "Textbook English".** Use collocations and phrasal verbs that native speakers actually use in this context.
+                    - Ensure the tone matches the selected style perfectly.
 
                     **CRITICAL RULES:**
                     1. **Natural:** Must sound HUMAN and NATIVE. No robotic phrasing.
@@ -437,6 +479,12 @@
                     - **FOCUS ON:** Sentence variety, rhetorical devices (inversion, parallelism, emphasis), cohesive devices, tone shifting, advanced clause structures, or subtle modality.
                     - **EXPLANATION LANGUAGE:** The explanation MUST be in **Traditional Chinese (繁體中文)**. It should explain the *feeling*, *nuance*, or *function* of the grammar, not just the formula. Use analogies if possible.
                     - **EXAMPLE FORMAT:** The \`example\` field MUST contain the English sentence. **CRITICAL:** You MUST wrap the specific words illustrating the grammar rule in \`<b>\` tags (e.g., "Never <b>have I seen</b> such beauty").
+
+                    **CRITICAL: REFLECTION QUESTIONS (NEW)**
+                    - Generate 3 discussion/reflection questions based on the text.
+                    - **Difficulty:** ${questionLevelInstruction}
+                    - **Goal:** Force the learner to switch from Input to Output.
+                    - **Guide:** Provide a "Thinking Guide" or "Hint" in **Traditional Chinese** for each question. This should be a prompt to help them answer (e.g., "Try using words like X and Y" or "Focus on your personal experience with...").
 
                     **FORMAT:**
                     - Bold 15-20 key words in the article using \`<b>\`. **CRITICAL: EVERY BOLD WORD MUST BE IN THE VOCABULARY LIST.**
@@ -459,6 +507,13 @@
                                 "explanation": "Detailed explanation in Traditional Chinese focusing on nuance and effect.", 
                                 "example": "Example sentence with <b>bold grammar structure</b>",
                                 "example_ch": "Traditional Chinese translation of the example sentence"
+                            }
+                        ],
+                        "questions": [
+                            { 
+                                "type": "Recall / Opinion / Analysis", 
+                                "question": "Question text in English", 
+                                "guide": "Hint/Direction in Traditional Chinese" 
                             }
                         ]
                     }
@@ -674,6 +729,36 @@
                                                     </div>
                                                 </div>
                                             ))}</div>
+                                        </section>
+                                    )}
+                                    {material.questions && (
+                                        <section className="break-before-auto mt-12">
+                                            <h2 className="text-2xl font-bold mb-6 flex items-center gap-3 font-sans border-t border-gray-200 pt-8" style={{ color: 'var(--text-main)' }}>
+                                                <span className="text-[#D97706] text-3xl print:text-black">04.</span> Reflection & Output
+                                            </h2>
+                                            <div className="space-y-8">
+                                                {material.questions.map((q, idx) => (
+                                                    <div key={idx} className="break-inside-avoid relative pl-4 border-l-2 hover:border-[#D97706] transition-colors duration-300" style={{ borderColor: 'var(--bg-panel)' }}>
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <span className="text-sm font-bold opacity-50 font-sans">Q{idx + 1}</span>
+                                                            <span className="px-2 py-1 rounded text-xs font-bold uppercase tracking-wide bg-[#D97706] text-white print:text-black print:border print:border-black print:bg-transparent">
+                                                                {q.type}
+                                                            </span>
+                                                        </div>
+                                                        <h3 className="text-xl md:text-2xl font-bold font-serif mb-3 leading-snug" style={{ color: 'var(--text-main)' }}>
+                                                            {q.question}
+                                                        </h3>
+                                                        <div className="p-4 rounded-xl bg-highlight border border-transparent" style={{ backgroundColor: 'var(--highlight-bg)' }}>
+                                                            <div className="flex items-center gap-2 text-[#D97706] text-sm font-bold mb-1">
+                                                                <Icons.Sparkles className="w-4 h-4" /> 思考方向 (Thinking Guide)
+                                                            </div>
+                                                            <p className="text-sm opacity-80 leading-relaxed" style={{ color: 'var(--text-main)' }}>
+                                                                {q.guide}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
                                         </section>
                                     )}
                                     <footer className="mt-16 flex justify-between items-center opacity-60 text-[10px] font-sans border-t border-gray-200 pt-6 uppercase tracking-widest"><span>Created for Audiophile & Learner</span><span>{new Date().toLocaleDateString()}</span></footer>
