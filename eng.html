@@ -746,14 +746,14 @@
                                                             </span>
                                                         </div>
                                                         <h3 className="text-xl md:text-2xl font-bold font-serif mb-3 leading-snug" style={{ color: 'var(--text-main)' }}>
-                                                            {q.question}
+                                                            {renderFormattedText(q.question)}
                                                         </h3>
                                                         <div className="p-4 rounded-xl bg-highlight border border-transparent" style={{ backgroundColor: 'var(--highlight-bg)' }}>
                                                             <div className="flex items-center gap-2 text-[#D97706] text-sm font-bold mb-1">
                                                                 <Icons.Sparkles className="w-4 h-4" /> 思考方向 (Thinking Guide)
                                                             </div>
                                                             <p className="text-sm opacity-80 leading-relaxed" style={{ color: 'var(--text-main)' }}>
-                                                                {q.guide}
+                                                                {renderFormattedText(q.guide)}
                                                             </p>
                                                         </div>
                                                     </div>
